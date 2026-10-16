@@ -25,6 +25,7 @@ def main() -> None:
         ROOT / "data/public_rice_support.tif",
         ROOT / "data/wi/field_season_summary.parquet",
         ROOT / "static/context.png",
+        ROOT / "static/rice_overlay.png",
     ]
     for item in required:
         require(item)

@@ -11,6 +11,9 @@ from pathlib import Path
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import numpy as np
+from PIL import Image
+import rasterio
 
 
 RELEASE = Path(__file__).resolve().parents[1]
@@ -69,11 +72,26 @@ def shard_field_timeseries() -> None:
             writer.close()
 
 
+def build_rice_overlay(height: int = 1200) -> None:
+    with rasterio.open(SRC29 / "29o-potential_rice_within_current_cropland.tif") as source:
+        scale = height / source.height
+        width = max(1, int(round(source.width * scale)))
+        values = source.read(
+            1,
+            out_shape=(height, width),
+            resampling=rasterio.enums.Resampling.nearest,
+        )
+    rgba = np.zeros((height, width, 4), dtype="uint8")
+    rgba[values == 1] = [239, 198, 70, 125]
+    Image.fromarray(rgba).save(RELEASE / "static/rice_overlay.png", optimize=True)
+
+
 def main() -> None:
     copy(SRC17 / "17o-field_index.parquet", RELEASE / "data/field_index.parquet")
     copy(SOURCE / "17o-system_field_coverage.geojson", RELEASE / "data/system_field_coverage.geojson")
     copy(SRC29 / "29o-potential_rice_within_current_cropland.tif", RELEASE / "data/public_rice_support.tif")
     copy(STATIC23 / "context.png", RELEASE / "static/context.png")
+    build_rice_overlay()
 
     for source_name, target_name in {
         "26o-window_summary.parquet": "window_summary.parquet",

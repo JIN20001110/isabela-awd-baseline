@@ -2,15 +2,12 @@
 from __future__ import annotations
 
 import base64
-import io
 from pathlib import Path
 
 import folium
 import numpy as np
 import pandas as pd
-from PIL import Image
 import plotly.graph_objects as go
-import rasterio
 import streamlit as st
 import release_data as d
 
@@ -23,15 +20,8 @@ def uri(path):
 
 
 @st.cache_data(show_spinner=False)
-def rice_overlay_uri(run_id, height=1200):
-    with rasterio.open(d.DATA / "public_rice_support.tif") as source:
-        scale = height / source.height
-        width = max(1, int(round(source.width * scale)))
-        values = source.read(1, out_shape=(height, width), resampling=rasterio.enums.Resampling.nearest)
-    rgba = np.zeros((height, width, 4), dtype="uint8")
-    rgba[values == 1] = [239, 198, 70, 125]
-    stream = io.BytesIO(); Image.fromarray(rgba).save(stream, format="PNG", optimize=True)
-    return "data:image/png;base64," + base64.b64encode(stream.getvalue()).decode()
+def rice_overlay_uri(run_id):
+    return uri(d.STATIC / "rice_overlay.png")
 
 
 def production_record(scope, threshold, window_id):
