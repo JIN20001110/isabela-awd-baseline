@@ -73,7 +73,7 @@ Developed a RADARSAT-1 wetness index using an instantaneous β⁰ value and an i
 Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice test-plot extrema for AWD change detection.''')
         st.latex(r'WI_{L}=\frac{\beta^0_{min}-\beta^0_{ins}}{\beta^0_{max}-\beta^0_{ins}}')
         st.markdown('[Original article](https://doi.org/10.3390/ijgi8070312)')
-    st.caption('The three publications do not use identical equations. The precise rationale for the modified nonlinear denominator is not explicitly established in the reviewed source material.')
+    st.warning('Lovell et al. (2019) followed the broader idea of earlier SAR-based relative wetness research, but printed a modified WI equation. In the verifiable literature reviewed for this project, we did not find an explicit mathematical derivation or a sufficiently detailed explanation for that modification. The formula is therefore reproduced as published and evaluated experimentally, without assuming that the modification has been independently justified.')
 
     st.markdown('#### Our two baseline equations')
     left,right=st.columns(2)
