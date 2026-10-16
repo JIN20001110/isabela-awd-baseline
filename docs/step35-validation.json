@@ -1,0 +1,94 @@
+{
+  "run_id": "89aacc7bbd1bbe68ce3204f0f030695f9817396e2b7d12c96a6961366e5e4e94",
+  "status": "pass",
+  "checks": [
+    {
+      "check": "run IDs agree",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "Step 32 low reference exact",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "Step 32 high reference exact",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "Published WI matches Step 33",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "dB P90 stricter than P80",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "linear sensitivity kept separate",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "no transition across non-12-day gap",
+      "status": "pass",
+      "details": "rows=0"
+    },
+    {
+      "check": "eligible field transitions have delta",
+      "status": "pass",
+      "details": "rows=0"
+    },
+    {
+      "check": "both baseline methods present",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "both P80/P90 settings present",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "screening labels are conservative",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "all raster maps exist",
+      "status": "pass",
+      "details": "64"
+    },
+    {
+      "check": "all display maps exist",
+      "status": "pass",
+      "details": "64"
+    },
+    {
+      "check": "recorded output hashes verify",
+      "status": "pass",
+      "details": "83"
+    },
+    {
+      "check": "Step 23 production pointer unchanged",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "Step 26 production pointer unchanged",
+      "status": "pass",
+      "details": ""
+    },
+    {
+      "check": "Step 28 production pointer unchanged",
+      "status": "pass",
+      "details": ""
+    }
+  ],
+  "field_timeseries_rows": 2291784,
+  "field_summary_rows": 528508,
+  "map_records": 64
+}

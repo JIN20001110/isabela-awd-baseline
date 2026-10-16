@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.env.*
+*.sql
+*.tif
+*.tiff
+!data/public_rice_support.tif
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.streamlit/secrets.toml
+raw/
+checkpoints/

@@ -1,0 +1,29 @@
+{
+  "study": {
+    "location": "Isabela, Philippines",
+    "period": "2023-2025",
+    "aoi_note": "Projected envelope of all supplied valid fields plus a 100 m buffer; not the whole province of Isabela",
+    "display_bounds": [[16.866321668369295, 121.52681115807678], [17.388788216438, 121.82541115851811]],
+    "sentinel1": "S1A descending R032",
+    "observation_dates": 88
+  },
+  "production": {
+    "thresholds": {
+      "p80": {"quantile": 0.8, "threshold": 0.0443},
+      "p90": {"quantile": 0.9, "threshold": 0.0588}
+    }
+  },
+  "wi": {
+    "run_id": "89aacc7bbd1bbe68ce3204f0f030695f9817396e2b7d12c96a6961366e5e4e94",
+    "references": {
+      "low_db": -15.117907831306951,
+      "high_db": -2.682668421422946,
+      "low_linear": 0.03077579049523542,
+      "high_linear": 0.5391792345798933
+    },
+    "thresholds": {
+      "p80": {"quantile": 0.8, "threshold": 2.5340000000000003, "population_pairs": 984772212},
+      "p90": {"quantile": 0.9, "threshold": 4.697, "population_pairs": 984772212}
+    }
+  }
+}
