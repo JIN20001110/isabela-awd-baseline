@@ -4,39 +4,53 @@ import release_data as d
 
 
 STYLE='''<style>
-.method-flow{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;margin:18px 0 24px}
+.method-flow{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:10px;margin:18px 0 24px}
 .method-step{background:#f3f7f5;border:1px solid #cbd9d3;border-top:4px solid #287b70;border-radius:5px;padding:13px 11px;min-height:112px}
 .method-step b{display:block;font-size:14px;margin-bottom:7px;color:#183e39}.method-step span{font-size:12px;color:#526964;line-height:1.45}
+.method-step.production{border-top-color:#277da1;background:#f2f8fb}.method-step.wi{border-top-color:#6655a5;background:#f6f4fb}.method-step.output{border-top-color:#b07b24;background:#fbf7ee}
 @media(max-width:1000px){.method-flow{grid-template-columns:repeat(3,1fr)}}
 </style>'''
 
 
 def render():
     st.subheader('Method')
-    st.caption('A regional pre-intervention screening of repeated wetting–drying patterns in Cropland areas, 2023–2025.')
+    st.caption('Two separate SAR-change baselines for regional pre-intervention screening, 2023–2025. The experimental WI does not replace the production baseline.')
     st.markdown(STYLE+'''<div class="method-flow">
-<div class="method-step"><b>1 · Sentinel-1</b><span>S1A · descending R032<br>88 observation dates</span></div>
-<div class="method-step"><b>2 · β⁰ estimate</b><span>Convert calibrated σ⁰ using incidence angle<br>Apply 3×3 median</span></div>
-<div class="method-step"><b>3 · Fixed reference</b><span>One Cropland min/max range<br>All pixels and dates</span></div>
-<div class="method-step"><b>4 · Relative index</b><span>Place every observation on the same wet-like to dry-like scale</span></div>
-<div class="method-step"><b>5 · Significant change</b><span>12-day ΔI<br>P90 primary · P80 sensitivity</span></div>
-<div class="method-step"><b>6 · Seasonal reversals</b><span>Count opposite directions inside each system’s Dry/Wet window</span></div>
+<div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
+<div class="method-step"><b>2 · Shared β⁰ preparation</b><span>Calibrated σ⁰ + incidence angle<br>β⁰ estimate · 3×3 spatial median</span></div>
+<div class="method-step production"><b>3A · Production reference</b><span>Fixed-support Cropland<br>One pooled 2023–2025 min/max range</span></div>
+<div class="method-step wi"><b>3B · Experimental WI reference</b><span>QC historical-rice domain<br>One pooled 2023–2025 P1/P99 range</span></div>
+<div class="method-step production"><b>4A · Relative SAR index</b><span>Linear normalization + clipping<br>Calculate adjacent ΔI</span></div>
+<div class="method-step wi"><b>4B · Published Lovell WI</b><span>Nonlinear equation · no clipping<br>Exclude unstable/out-of-range observations</span></div>
+<div class="method-step"><b>5 · Independent thresholds</b><span>Each baseline derives its own P90 primary and P80 sensitivity threshold</span></div>
+<div class="method-step"><b>6 · Temporal continuity</b><span>Use valid adjacent observations only<br>Missing or excluded dates break the sequence</span></div>
+<div class="method-step"><b>7 · Cropping windows</b><span>Whole-region common windows<br>System-specific MARIIS/UCRIS/MRIS windows</span></div>
+<div class="method-step"><b>8 · Direction reversals</b><span>Count significant changes that switch direction within each window</span></div>
+<div class="method-step output"><b>9 · Screening outputs</b><span>0 · 1 · 2 · 3+ reversals<br>Regional maps and field-level review</span></div>
+<div class="method-step output"><b>10 · Interpretation</b><span>Potential AWD-like SAR patterns<br>Not measured water level or confirmed AWD</span></div>
 </div>''',unsafe_allow_html=True)
 
-    left,right=st.columns([1.15,1])
+    st.markdown('#### Core calculations')
+    st.latex(r'\beta^0_{est,dB}=\sigma^0_{dB}-10\log_{10}(\sin\theta)')
+    left,right=st.columns(2)
     with left:
-        st.markdown('#### Core calculations')
-        st.latex(r'\beta^0_{est,dB}=\sigma^0_{dB}-10\log_{10}(\sin\theta)')
+        st.markdown('**Baseline A · production relative SAR index**')
         st.latex(r'I_t=\operatorname{clip}\!\left(\frac{\beta^0_{dry}-\beta^0_t}{\beta^0_{dry}-\beta^0_{wet}},0,1\right)')
         st.latex(r'\Delta I_t=I_t-I_{t-1}')
     with right:
-        st.markdown('#### Fixed choices')
-        thresholds=d.metadata()['production']['thresholds']
-        st.markdown(f'''- **Reference domain:** fixed-support Cropland
-- **Spatial filter:** 3×3 median
-- **P90:** |ΔI| ≥ {thresholds['p90']['threshold']:.4f} · primary
-- **P80:** |ΔI| ≥ {thresholds['p80']['threshold']:.4f} · sensitivity
-- **Output:** 0, 1, 2 or 3+ reversals''')
+        st.markdown('**Baseline B · experimental Lovell WI**')
+        st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
+        st.latex(r'\Delta WI_t=WI_t-WI_{t-1}')
+
+    production=d.metadata()['production']['thresholds']
+    wi=d.metadata()['wi']
+    refs=wi['references']; wi_thresholds=wi['thresholds']
+    st.markdown('#### Fixed screening choices')
+    st.markdown(f'''| Baseline | Fixed reference population and endpoints | P90 · primary | P80 · sensitivity |
+|---|---|---:|---:|
+| Production relative index | Fixed-support Cropland · pooled 2023–2025 min/max | {production['p90']['threshold']:.4f} | {production['p80']['threshold']:.4f} |
+| Experimental Lovell WI | QC historical-rice P1/P99 · {refs['low_db']:.3f}/{refs['high_db']:.3f} dB | {wi_thresholds['p90']['threshold']:.3f} | {wi_thresholds['p80']['threshold']:.3f} |''')
+    st.caption('Thresholds are derived independently because ΔI and ΔWI have different numerical scales. They are not interchangeable moisture thresholds.')
 
     st.markdown('#### Cropping windows')
     st.markdown('''| System | Dry | Wet |
