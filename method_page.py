@@ -1,4 +1,4 @@
-"""English method page for the production and experimental WI baselines."""
+"""English method page for the production, reference-sensitivity and WI branches."""
 import streamlit as st
 import release_data as d
 
@@ -7,22 +7,24 @@ STYLE='''<style>
 .method-flow{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:10px;margin:18px 0 24px}
 .method-step{background:#f3f7f5;border:1px solid #cbd9d3;border-top:4px solid #287b70;border-radius:5px;padding:13px 11px;min-height:112px}
 .method-step b{display:block;font-size:14px;margin-bottom:7px;color:#183e39}.method-step span{font-size:12px;color:#526964;line-height:1.45}
-.method-step.production{border-top-color:#277da1;background:#f2f8fb}.method-step.wi{border-top-color:#6655a5;background:#f6f4fb}.method-step.output{border-top-color:#b07b24;background:#fbf7ee}
+.method-step.production{border-top-color:#277da1;background:#f2f8fb}.method-step.sensitivity{border-top-color:#1b8f75;background:#f1faf7}.method-step.wi{border-top-color:#6655a5;background:#f6f4fb}.method-step.output{border-top-color:#b07b24;background:#fbf7ee}
 @media(max-width:1000px){.method-flow{grid-template-columns:repeat(3,1fr)}}
 </style>'''
 
 
 def render():
     st.subheader('Method')
-    st.caption('Two separate SAR-change baselines for regional pre-intervention screening, 2023–2025. The experimental WI does not replace the production baseline.')
+    st.caption('Two screened SAR-change baselines plus one reference-range sensitivity formulation, 2023–2025. Neither experimental branch replaces the production baseline.')
     st.markdown(STYLE+'''<div class="method-flow">
 <div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
 <div class="method-step"><b>2 · Shared β⁰ preparation</b><span>Calibrated σ⁰ + incidence angle<br>β⁰ estimate · 3×3 spatial median</span></div>
 <div class="method-step production"><b>3A · Production reference</b><span>Fixed-support Cropland<br>One pooled 2023–2025 min/max range</span></div>
-<div class="method-step wi"><b>3B · Experimental WI reference</b><span>QC historical-rice domain<br>One pooled 2023–2025 P1/P99 range</span></div>
+<div class="method-step sensitivity"><b>3B · Rice raw-extrema reference</b><span>Historical potential-rice ∩ Cropland<br>One pooled 2023–2025 min/max range</span></div>
+<div class="method-step wi"><b>3C · Experimental WI reference</b><span>QC historical-rice domain<br>One pooled 2023–2025 P1/P99 range</span></div>
 <div class="method-step production"><b>4A · Relative SAR index</b><span>Linear normalization + clipping<br>Calculate adjacent ΔI</span></div>
-<div class="method-step wi"><b>4B · Published Lovell WI</b><span>Nonlinear equation · no clipping<br>Exclude unstable/out-of-range observations</span></div>
-<div class="method-step"><b>5 · Independent thresholds</b><span>Each baseline derives its own P90 primary and P80 sensitivity threshold</span></div>
+<div class="method-step sensitivity"><b>4B · Rice-reference relative index</b><span>Same linear equation, different endpoints<br>Reference-range sensitivity only</span></div>
+<div class="method-step wi"><b>4C · Published Lovell WI</b><span>Nonlinear equation · no clipping<br>Exclude unstable/out-of-range observations</span></div>
+<div class="method-step"><b>5 · Screening thresholds</b><span>Production and WI derive independent P90 primary and P80 sensitivity thresholds</span></div>
 <div class="method-step"><b>6 · Temporal continuity</b><span>Use valid adjacent observations only<br>Missing or excluded dates break the sequence</span></div>
 <div class="method-step"><b>7 · Cropping windows</b><span>Whole-region common windows<br>System-specific MARIIS/UCRIS/MRIS windows</span></div>
 <div class="method-step"><b>8 · Direction reversals</b><span>Count significant changes that switch direction within each window</span></div>
@@ -32,13 +34,17 @@ def render():
 
     st.markdown('#### Core calculations')
     st.latex(r'\beta^0_{est,dB}=\sigma^0_{dB}-10\log_{10}(\sin\theta)')
-    left,right=st.columns(2)
+    left,middle,right=st.columns(3)
     with left:
         st.markdown('**Baseline A · production relative SAR index**')
         st.latex(r'I_t=\operatorname{clip}\!\left(\frac{\beta^0_{dry}-\beta^0_t}{\beta^0_{dry}-\beta^0_{wet}},0,1\right)')
         st.latex(r'\Delta I_t=I_t-I_{t-1}')
+    with middle:
+        st.markdown('**Formulation B · rice raw-min/max relative index**')
+        st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
+        st.latex(r'L_{rice}=-44.826,\quad U_{rice}=24.132\ \mathrm{dB}')
     with right:
-        st.markdown('**Baseline B · experimental Lovell WI**')
+        st.markdown('**Baseline C · experimental Lovell WI**')
         st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
         st.latex(r'\Delta WI_t=WI_t-WI_{t-1}')
 
@@ -49,8 +55,9 @@ def render():
     st.markdown(f'''| Baseline | Fixed reference population and endpoints | P90 · primary | P80 · sensitivity |
 |---|---|---:|---:|
 | Production relative index | Fixed-support Cropland · pooled 2023–2025 min/max | {production['p90']['threshold']:.4f} | {production['p80']['threshold']:.4f} |
+| Rice raw-min/max relative index | Historical potential-rice ∩ Cropland · −44.826/+24.132 dB | Not rerun | Not rerun |
 | Experimental Lovell WI | QC historical-rice P1/P99 · {refs['low_db']:.3f}/{refs['high_db']:.3f} dB | {wi_thresholds['p90']['threshold']:.3f} | {wi_thresholds['p80']['threshold']:.3f} |''')
-    st.caption('Thresholds are derived independently because ΔI and ΔWI have different numerical scales. They are not interchangeable moisture thresholds.')
+    st.caption('The rice raw-min/max version is currently a reference-range sensitivity formulation, not a third screening result. Production and WI thresholds are derived independently and are not interchangeable moisture thresholds.')
 
     st.markdown('#### Cropping windows')
     st.markdown('''| System | Dry | Wet |
@@ -67,8 +74,8 @@ def render():
 - Results describe supplied field coverage, not official irrigation-system boundaries.''')
 
     st.divider()
-    st.subheader('Wetness Index: Literature Origin and Methodological Adaptation')
-    st.caption('The experimental WI baseline extends the production screening; it does not replace it.')
+    st.subheader('Reference Formulations and Literature Origin')
+    st.caption('The rice-reference relative index isolates the effect of changing endpoints; the experimental WI also changes the equation.')
 
     st.markdown('#### Formula provenance')
     c1,c2,c3=st.columns(3)
@@ -89,19 +96,24 @@ Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice te
         st.markdown('[Original article](https://doi.org/10.3390/ijgi8070312)')
     st.warning('Lovell et al. (2019) followed the broader idea of earlier SAR-based relative wetness research, but printed a modified WI equation. In the verifiable literature reviewed for this project, we did not find an explicit mathematical derivation or a sufficiently detailed explanation for that modification. The formula is therefore reproduced as published and evaluated experimentally, without assuming that the modification has been independently justified.')
 
-    st.markdown('#### Our two baseline equations')
-    left,right=st.columns(2)
+    st.markdown('#### Our three formulations')
+    left,middle,right=st.columns(3)
     with left:
         st.markdown('**Baseline A · production relative SAR index**')
         st.latex(r'I_t=\operatorname{clip}\!\left(\frac{\beta^0_{high}-\beta^0_t}{\beta^0_{high}-\beta^0_{low}},0,1\right)')
         st.markdown('Linear normalization followed by clipping. Its fixed endpoints come from the production **Cropland** domain.')
+    with middle:
+        st.markdown('**Formulation B · rice raw-min/max relative index**')
+        st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
+        st.markdown('Uses the same linear equation as Baseline A, but fixes the endpoints to the pooled historical potential-rice domain: **−44.826 dB** and **+24.132 dB**.')
+        st.markdown('This is retained as a reference-range sensitivity formulation. Step 31 found that these raw extrema are processed observations but not representative validated wet/dry anchors.')
     with right:
-        st.markdown('**Baseline B · experimental Lovell WI**')
+        st.markdown('**Baseline C · experimental Lovell WI**')
         st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
         refs=d.metadata()['wi']['references']
         st.markdown(f"Uses the Step 32 QC historical-rice P1/P99 references: **{refs['low_db']:.3f} dB** and **{refs['high_db']:.3f} dB**.")
         st.markdown('Nonlinear and singular when β⁰ equals the high reference. It is not clipped in Step 35.')
-    st.markdown('''Both equations use β⁰ and fixed endpoints, but the reference populations are different. A nonlinear transformation does not create an independent water observation. With identical references and units, the **unclipped** linear index and Lovell WI satisfy $WI=1-1/I$ wherever the denominator exists and $I\ne0$; this identity does not carry over unchanged after clipping or when the references differ.''')
+    st.markdown('''Formulations A and B are the same linear transformation with different reference populations and endpoints; B therefore tests the consequence of selecting a rice-based raw range rather than adding independent moisture information. Formulation C changes both the reference definition and the equation. With identical references and units, the **unclipped** linear index and Lovell WI satisfy $WI=1-1/I$ wherever the denominator exists and $I\ne0$; this identity does not carry over unchanged after clipping or when the references differ.''')
 
     st.markdown('#### How the experimental WI baseline was developed')
     st.markdown('''| Step | Evidence added |

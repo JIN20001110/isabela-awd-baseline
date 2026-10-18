@@ -41,6 +41,8 @@ def main() -> None:
 
     meta = json.loads((ROOT / "data/metadata.json").read_text())
     assert meta["study"]["observation_dates"] == 88
+    rice_raw = meta["rice_raw_relative_index"]["references"]
+    assert rice_raw["low_db"] < rice_raw["high_db"]
     assert meta["wi"]["references"]["low_db"] < meta["wi"]["references"]["high_db"]
 
     field_index = pd.read_parquet(ROOT / "data/field_index.parquet")

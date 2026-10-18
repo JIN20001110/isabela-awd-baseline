@@ -13,6 +13,14 @@
       "p90": {"quantile": 0.9, "threshold": 0.0588}
     }
   },
+  "rice_raw_relative_index": {
+    "status": "reference-range sensitivity only; transition screening not rerun",
+    "reference_population": "Open-SEA-Rice-10 historical potential-rice support intersected with WorldCover Cropland, pooled across 2023-2025",
+    "references": {
+      "low_db": -44.82646179199219,
+      "high_db": 24.131746292114258
+    }
+  },
   "wi": {
     "run_id": "89aacc7bbd1bbe68ce3204f0f030695f9817396e2b7d12c96a6961366e5e4e94",
     "references": {
