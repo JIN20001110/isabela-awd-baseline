@@ -46,7 +46,7 @@ The release excludes:
 - raw and intermediate Sentinel-1 GeoTIFFs;
 - computation checkpoints and temporary files.
 
-See [Data provenance](docs/data-provenance.md), the [Step 35 WI report](docs/step35-technical-report.md), and the [Step 36 rice-reference report](docs/step36-technical-report.md) for details.
+See [Data provenance](docs/data-provenance.md), the [Step 35 WI report](docs/step35-technical-report.md), the [Step 36 rice-reference report](docs/step36-technical-report.md), and the [all-version spatial statistics workbook](docs/37o-all-versions-spatial-statistics.xlsx) for details.
 
 ## Scientific interpretation
 
