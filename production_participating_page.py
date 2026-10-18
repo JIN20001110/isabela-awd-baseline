@@ -13,11 +13,11 @@ import release_data as d
 def uri(path):return 'data:image/png;base64,'+base64.b64encode(Path(path).read_bytes()).decode()
 
 
-def map_view(record):
+def map_view(record, static_section):
     bounds=d.metadata()['study']['display_bounds'];center=[sum(x[0] for x in bounds)/2,sum(x[1] for x in bounds)/2]
     m=folium.Map(location=center,zoom_start=10.5,tiles=None,control_scale=True,min_zoom=7,max_zoom=18)
     folium.raster_layers.ImageOverlay(uri(d.STATIC/'context.png'),bounds=bounds,name='Excluded land cover',opacity=.7).add_to(m)
-    folium.raster_layers.ImageOverlay(uri(d.STATIC/'production'/'participating_areas'/record['png']),bounds=bounds,name='Reversal count',opacity=.95).add_to(m)
+    folium.raster_layers.ImageOverlay(uri(d.STATIC/static_section/'participating_areas'/record['png']),bounds=bounds,name='Reversal count',opacity=.95).add_to(m)
     coverage=d.coverage_geojson()
     def thin_outline(feature):
         color=feature['properties'].get('color',[70,85,95,220])
@@ -31,10 +31,15 @@ def map_view(record):
 def render():
     st.subheader('Participating-area results')
     st.caption('Cropland inside the supplied MARIIS, UCRIS and MRIS fields. Each system uses its own cropping calendar.')
-    windows=d.table('production/participating_areas','window_summary.parquet')
-    distribution=d.table('production/participating_areas','area_distribution.parquet')
-    fields=d.table('production/participating_areas','field_summary.parquet')
-    records={(row['threshold'],row['window_id']):row for row in d.map_index('production/participating_areas')}
+    version=st.radio('Relative-index reference',['Production · Cropland min/max','Sensitivity · rice-domain min/max'],horizontal=True,key='participating_reference')
+    rice=version.startswith('Sensitivity')
+    section='rice_raw/participating_areas' if rice else 'production/participating_areas'
+    static_section='rice_raw' if rice else 'production'
+    meta_key='rice_raw_relative_index' if rice else 'production'
+    windows=d.table(section,'window_summary.parquet')
+    distribution=d.table(section,'area_distribution.parquet')
+    fields=d.table(section,'field_summary.parquet')
+    records={(row['threshold'],row['window_id']):row for row in d.map_index(section)}
 
     st.markdown('''| System | Dry window | Wet window |
 |---|---|---|
@@ -45,8 +50,10 @@ def render():
     season=st.radio('Cropping season',['Dry','Wet'],horizontal=True,key='seasonal26_season')
     threshold=st.radio('Change threshold',['p90','p80'],horizontal=True,key='seasonal26_threshold',
         format_func=lambda x:'P90 · primary' if x=='p90' else 'P80 · sensitivity')
-    threshold_value=d.metadata()['production']['thresholds'][threshold]['threshold']
-    st.caption(f'{threshold.upper()} uses |ΔI| ≥ {threshold_value:.4f}. P90 retains the largest 10% of 12-day changes and gives a stricter result. P80 retains the largest 20% and checks whether the same pattern remains when moderate changes are included. Both thresholds are fixed from all 2023–2025 Cropland observations.')
+    threshold_value=d.metadata()[meta_key]['thresholds'][threshold]['threshold']
+    reference_note=('Historical potential-rice ∩ Cropland raw min/max (−44.826/+24.132 dB)' if rice
+                    else 'fixed-support Cropland raw min/max')
+    st.caption(f'{reference_note}. {threshold.upper()} uses |ΔI| ≥ {threshold_value:.4f}; P90 retains the largest 10% and P80 the largest 20% of all 2023–2025 Cropland changes.')
     available=windows.loc[windows.system.eq(system)&windows.season.eq(season)&windows.threshold.eq(threshold)].copy()
     chosen=st.selectbox('Window',available.window_id.tolist(),
         format_func=dict(zip(available.window_id,available.label)).get,key='seasonal26_window')
@@ -70,7 +77,7 @@ def render():
     st.plotly_chart(fig,width='stretch')
 
     st.markdown('### Map')
-    st.iframe(map_view(records[(threshold,chosen)]).get_root().render(),height=760)
+    st.iframe(map_view(records[(threshold,chosen)],static_section).get_root().render(),height=760)
     st.caption('Light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ reversals. Only Cropland inside supplied fields is shown.')
 
     st.markdown('### Compare complete windows')
@@ -102,11 +109,11 @@ def render():
         st.caption('Ranked by the field share with 2+ reversals. Review priority only—not confirmed AWD.')
     with st.expander('Downloads and limitations'):
         st.download_button('Download selected area distribution (CSV)',selected.to_csv(index=False),
-            file_name=f'26o-{chosen}-area-distribution.csv',mime='text/csv')
+            file_name=f'{"36o-rice-raw" if rice else "26o-production"}-{chosen}-area-distribution.csv',mime='text/csv')
         st.download_button('Download selected field summary (CSV)',selected_fields.to_csv(index=False),
-            file_name=f'26o-{chosen}-field-summary.csv',mime='text/csv')
+            file_name=f'{"36o-rice-raw" if rice else "26o-production"}-{chosen}-field-summary.csv',mime='text/csv')
         st.download_button('Download all window summaries (CSV)',windows.to_csv(index=False),
-            file_name='26o-all-window-summary.csv',mime='text/csv')
+            file_name=f'{"36o-rice-raw" if rice else "26o-production"}-all-window-summary.csv',mime='text/csv')
         st.markdown('''- P90 and P80 are both fixed from the full 2023–2025 Cropland history and are not refitted by system or season.
 - P90 is the primary screening result. P80 is a more inclusive sensitivity result; patterns present under both thresholds are more stable.
 - Counts depend on the number of valid 12-day pairs; compare windows with similar coverage and always retain the pair count.

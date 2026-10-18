@@ -43,6 +43,7 @@ def main() -> None:
     assert meta["study"]["observation_dates"] == 88
     rice_raw = meta["rice_raw_relative_index"]["references"]
     assert rice_raw["low_db"] < rice_raw["high_db"]
+    assert meta["rice_raw_relative_index"]["thresholds"]["p80"]["threshold"] < meta["rice_raw_relative_index"]["thresholds"]["p90"]["threshold"]
     assert meta["wi"]["references"]["low_db"] < meta["wi"]["references"]["high_db"]
 
     field_index = pd.read_parquet(ROOT / "data/field_index.parquet")
@@ -53,6 +54,8 @@ def main() -> None:
     for section, expected in [
         ("production/whole_region", 16),
         ("production/participating_areas", 32),
+        ("rice_raw/whole_region", 16),
+        ("rice_raw/participating_areas", 32),
         ("wi", 64),
     ]:
         table = pd.read_parquet(ROOT / "data" / section / "window_summary.parquet")

@@ -13,11 +13,11 @@ import release_data as d
 def uri(path):return 'data:image/png;base64,'+base64.b64encode(Path(path).read_bytes()).decode()
 
 
-def map_view(record):
+def map_view(record, static_section):
     bounds=d.metadata()['study']['display_bounds'];center=[sum(x[0] for x in bounds)/2,sum(x[1] for x in bounds)/2]
     m=folium.Map(location=center,zoom_start=9.5,tiles=None,control_scale=True,min_zoom=7,max_zoom=18)
     folium.raster_layers.ImageOverlay(uri(d.STATIC/'context.png'),bounds=bounds,name='Excluded land cover',opacity=.7).add_to(m)
-    folium.raster_layers.ImageOverlay(uri(d.STATIC/'production'/'whole_region'/record['png']),bounds=bounds,name='Reversal count',opacity=.95).add_to(m)
+    folium.raster_layers.ImageOverlay(uri(d.STATIC/static_section/'whole_region'/record['png']),bounds=bounds,name='Reversal count',opacity=.95).add_to(m)
     coverage=d.coverage_geojson()
     def outline(feature):
         color=feature['properties'].get('color',[70,85,95,220])
@@ -31,14 +31,21 @@ def map_view(record):
 def render():
     st.subheader('Whole-region results')
     st.caption('All fixed-support Cropland across the AOI, including areas outside the supplied fields. Common windows: Wet core May–October, November transition, and Dry core December–April.')
-    windows=d.table('production/whole_region','window_summary.parquet')
-    distribution=d.table('production/whole_region','area_distribution.parquet')
-    records={(row['threshold'],row['window_id']):row for row in d.map_index('production/whole_region')}
+    version=st.radio('Relative-index reference',['Production · Cropland min/max','Sensitivity · rice-domain min/max'],horizontal=True,key='regional_reference')
+    rice=version.startswith('Sensitivity')
+    section='rice_raw/whole_region' if rice else 'production/whole_region'
+    static_section='rice_raw' if rice else 'production'
+    meta_key='rice_raw_relative_index' if rice else 'production'
+    windows=d.table(section,'window_summary.parquet')
+    distribution=d.table(section,'area_distribution.parquet')
+    records={(row['threshold'],row['window_id']):row for row in d.map_index(section)}
     season=st.radio('Period',['Wet core','Dry core','November transition'],horizontal=True,key='regional28_season')
     threshold=st.radio('Change threshold',['p90','p80'],horizontal=True,key='regional28_threshold',
         format_func=lambda x:'P90 · primary' if x=='p90' else 'P80 · sensitivity')
-    value=d.metadata()['production']['thresholds'][threshold]['threshold']
-    st.caption(f'{threshold.upper()} uses |ΔI| ≥ {value:.4f}. P90 retains the largest 10% of changes; P80 retains the largest 20%. Both are fixed from all 2023–2025 Cropland observations.')
+    value=d.metadata()[meta_key]['thresholds'][threshold]['threshold']
+    reference_note=('Historical potential-rice ∩ Cropland raw min/max (−44.826/+24.132 dB)' if rice
+                    else 'fixed-support Cropland raw min/max')
+    st.caption(f'{reference_note}. {threshold.upper()} uses |ΔI| ≥ {value:.4f}; P90 retains the largest 10% and P80 the largest 20% of all 2023–2025 Cropland changes.')
     available=windows.loc[windows.season.eq(season)&windows.threshold.eq(threshold)].copy()
     chosen=st.selectbox('Window',available.window_id.tolist(),format_func=dict(zip(available.window_id,available.label)).get,key='regional28_window')
     summary=available.loc[available.window_id.eq(chosen)].iloc[0]
@@ -57,7 +64,7 @@ def render():
         annotations=[dict(text='<b>Cropland<br>area</b>',x=.5,y=.5,showarrow=False)])
     st.plotly_chart(fig,width='stretch')
     st.markdown('### Map')
-    st.iframe(map_view(records[(threshold,chosen)]).get_root().render(),height=760)
+    st.iframe(map_view(records[(threshold,chosen)],static_section).get_root().render(),height=760)
     st.caption('Light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ reversals. Thin outlines show supplied system-field coverage only.')
     st.markdown('### Compare complete windows')
     compare=distribution.loc[distribution.season.eq(season)&distribution.threshold.eq(threshold)].copy()
@@ -77,7 +84,7 @@ def render():
     st.plotly_chart(rings,width='stretch')
     with st.expander('Download and limits'):
         st.download_button('Download selected distribution (CSV)',selected.to_csv(index=False),
-            file_name=f'28o-{threshold}-{chosen}-distribution.csv',mime='text/csv')
+            file_name=f'{"36o-rice-raw" if rice else "28o-production"}-{threshold}-{chosen}-distribution.csv',mime='text/csv')
         st.download_button('Download all regional windows (CSV)',windows.to_csv(index=False),
-            file_name='28o-regional-window-summary.csv',mime='text/csv')
+            file_name=f'{"36o-rice-raw" if rice else "28o-production"}-regional-window-summary.csv',mime='text/csv')
         st.caption('Regional screening only. The common calendar is an assumption; repeated reversals are not confirmed AWD adoption.')

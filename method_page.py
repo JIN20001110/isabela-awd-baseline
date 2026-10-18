@@ -14,7 +14,7 @@ STYLE='''<style>
 
 def render():
     st.subheader('Method')
-    st.caption('Two screened SAR-change baselines plus one reference-range sensitivity formulation, 2023–2025. Neither experimental branch replaces the production baseline.')
+    st.caption('One production baseline and two experimental sensitivity screenings, 2023–2025. Neither experimental branch replaces the production baseline.')
     st.markdown(STYLE+'''<div class="method-flow">
 <div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
 <div class="method-step"><b>2 · Shared β⁰ preparation</b><span>Calibrated σ⁰ + incidence angle<br>β⁰ estimate · 3×3 spatial median</span></div>
@@ -22,9 +22,9 @@ def render():
 <div class="method-step sensitivity"><b>3B · Rice raw-extrema reference</b><span>Historical potential-rice ∩ Cropland<br>One pooled 2023–2025 min/max range</span></div>
 <div class="method-step wi"><b>3C · Experimental WI reference</b><span>QC historical-rice domain<br>One pooled 2023–2025 P1/P99 range</span></div>
 <div class="method-step production"><b>4A · Relative SAR index</b><span>Linear normalization + clipping<br>Calculate adjacent ΔI</span></div>
-<div class="method-step sensitivity"><b>4B · Rice-reference relative index</b><span>Same linear equation, different endpoints<br>Reference-range sensitivity only</span></div>
+<div class="method-step sensitivity"><b>4B · Rice-reference relative index</b><span>Same linear equation, different endpoints<br>Calculate adjacent ΔI</span></div>
 <div class="method-step wi"><b>4C · Published Lovell WI</b><span>Nonlinear equation · no clipping<br>Exclude unstable/out-of-range observations</span></div>
-<div class="method-step"><b>5 · Screening thresholds</b><span>Production and WI derive independent P90 primary and P80 sensitivity thresholds</span></div>
+<div class="method-step"><b>5 · Independent thresholds</b><span>Each formulation derives its own P90 primary and P80 sensitivity threshold</span></div>
 <div class="method-step"><b>6 · Temporal continuity</b><span>Use valid adjacent observations only<br>Missing or excluded dates break the sequence</span></div>
 <div class="method-step"><b>7 · Cropping windows</b><span>Whole-region common windows<br>System-specific MARIIS/UCRIS/MRIS windows</span></div>
 <div class="method-step"><b>8 · Direction reversals</b><span>Count significant changes that switch direction within each window</span></div>
@@ -49,15 +49,16 @@ def render():
         st.latex(r'\Delta WI_t=WI_t-WI_{t-1}')
 
     production=d.metadata()['production']['thresholds']
+    rice_raw=d.metadata()['rice_raw_relative_index']
     wi=d.metadata()['wi']
     refs=wi['references']; wi_thresholds=wi['thresholds']
     st.markdown('#### Fixed screening choices')
     st.markdown(f'''| Baseline | Fixed reference population and endpoints | P90 · primary | P80 · sensitivity |
 |---|---|---:|---:|
 | Production relative index | Fixed-support Cropland · pooled 2023–2025 min/max | {production['p90']['threshold']:.4f} | {production['p80']['threshold']:.4f} |
-| Rice raw-min/max relative index | Historical potential-rice ∩ Cropland · −44.826/+24.132 dB | Not rerun | Not rerun |
+| Rice raw-min/max relative index | Historical potential-rice ∩ Cropland · −44.826/+24.132 dB | {rice_raw['thresholds']['p90']['threshold']:.4f} | {rice_raw['thresholds']['p80']['threshold']:.4f} |
 | Experimental Lovell WI | QC historical-rice P1/P99 · {refs['low_db']:.3f}/{refs['high_db']:.3f} dB | {wi_thresholds['p90']['threshold']:.3f} | {wi_thresholds['p80']['threshold']:.3f} |''')
-    st.caption('The rice raw-min/max version is currently a reference-range sensitivity formulation, not a third screening result. Production and WI thresholds are derived independently and are not interchangeable moisture thresholds.')
+    st.caption('All three thresholds were derived independently from each formulation’s full 2023–2025 eligible Cropland pixel-pair distribution. They are not interchangeable moisture thresholds.')
 
     st.markdown('#### Cropping windows')
     st.markdown('''| System | Dry | Wet |
@@ -106,7 +107,7 @@ Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice te
         st.markdown('**Formulation B · rice raw-min/max relative index**')
         st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
         st.markdown('Uses the same linear equation as Baseline A, but fixes the endpoints to the pooled historical potential-rice domain: **−44.826 dB** and **+24.132 dB**.')
-        st.markdown('This is retained as a reference-range sensitivity formulation. Step 31 found that these raw extrema are processed observations but not representative validated wet/dry anchors.')
+        st.markdown('Step 36 screened this reference-range sensitivity using independently derived P80/P90 thresholds. Step 31 found that the raw extrema are processed observations but not representative validated wet/dry anchors.')
     with right:
         st.markdown('**Baseline C · experimental Lovell WI**')
         st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
@@ -125,6 +126,7 @@ Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice te
 | 33 · Published WI | The printed Lovell equation was reproduced in separate dB and linear-power branches. |
 | 34 · Temporal feasibility | Change direction, singularity risk, reversals, seasons, and rainfall consistency were diagnosed. |
 | 35 · Baseline screening | WI-specific P90/P80 thresholds, regional/field results, and comparison with Baseline A were produced. |''')
+    st.markdown('**Step 36 · Rice raw-min/max sensitivity:** the same linear relative-index equation was rerun using the pooled historical-rice raw extrema, with independent P80/P90 thresholds and full regional/field outputs. The resulting reversal distributions were nearly unchanged from production, showing that this endpoint change primarily rescales the index rather than adding new temporal information.')
     st.markdown('The Step 35 primary branch uses the unchanged published equation with dB values for consistency with Steps 33–34. The publication does not resolve the calculation unit, so linear power remains a separate sensitivity result. Only inside-range, numerically stable observations are screened; exclusions are retained explicitly and break temporal continuity.')
 
     with st.expander('Scientific interpretation and limitations'):

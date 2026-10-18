@@ -24,11 +24,13 @@ SRC26 = SOURCE / "26o-system_season_reversals_ab28d084ea89"
 SRC28 = SOURCE / "28o-regional_season_reversals_6e40c2b942fc"
 SRC29 = SOURCE / "29o-public_rice_assessment_3b7c334c8af8"
 SRC35 = SOURCE / "35o-wi_baseline_89aacc7bbd1b"
+SRC36 = SOURCE / "36o-rice_raw_relative_3443311cfd01"
 
 STATIC23 = SOURCE / "static/23o-regional_change_ae54eb9901a8"
 STATIC26 = SOURCE / "static/26o-system_season_reversals_ab28d084ea89"
 STATIC28 = SOURCE / "static/28o-regional_season_reversals_6e40c2b942fc"
 STATIC35 = SOURCE / "static/35o-wi_baseline_89aacc7bbd1b"
+STATIC36 = SOURCE / "static/36o-rice_raw_relative_3443311cfd01"
 
 
 def copy(source: Path, destination: Path) -> None:
@@ -109,6 +111,21 @@ def main() -> None:
         copy(SRC28 / source_name, RELEASE / "data/production/whole_region" / target_name)
 
     for source_name, target_name in {
+        "36o-participating_window_summary.parquet": "window_summary.parquet",
+        "36o-participating_area_distribution.parquet": "area_distribution.parquet",
+        "36o-field_summary.parquet": "field_summary.parquet",
+        "36o-participating_map_index.json": "map_index.json",
+    }.items():
+        copy(SRC36 / source_name, RELEASE / "data/rice_raw/participating_areas" / target_name)
+
+    for source_name, target_name in {
+        "36o-regional_window_summary.parquet": "window_summary.parquet",
+        "36o-regional_area_distribution.parquet": "area_distribution.parquet",
+        "36o-regional_map_index.json": "map_index.json",
+    }.items():
+        copy(SRC36 / source_name, RELEASE / "data/rice_raw/whole_region" / target_name)
+
+    for source_name, target_name in {
         "35o-window_summary.parquet": "window_summary.parquet",
         "35o-reversal_distribution.parquet": "reversal_distribution.parquet",
         "35o-field_season_summary.parquet": "field_season_summary.parquet",
@@ -121,9 +138,13 @@ def main() -> None:
 
     copy(SRC35 / "35o-technical_report.md", RELEASE / "docs/step35-technical-report.md")
     copy(SRC35 / "35o-validation.json", RELEASE / "docs/step35-validation.json")
+    copy(SRC36 / "36o-technical_report.md", RELEASE / "docs/step36-technical-report.md")
+    copy(SRC36 / "36o-production_comparison.csv", RELEASE / "docs/step36-production-comparison.csv")
     copy_pngs(STATIC26, RELEASE / "static/production/participating_areas")
     copy_pngs(STATIC28, RELEASE / "static/production/whole_region")
     copy_pngs(STATIC35, RELEASE / "static/wi")
+    copy_pngs(STATIC36 / "participating_areas", RELEASE / "static/rice_raw/participating_areas")
+    copy_pngs(STATIC36 / "whole_region", RELEASE / "static/rice_raw/whole_region")
     shard_field_timeseries()
 
 

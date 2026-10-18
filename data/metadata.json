@@ -14,11 +14,17 @@
     }
   },
   "rice_raw_relative_index": {
-    "status": "reference-range sensitivity only; transition screening not rerun",
+    "status": "completed reference-range sensitivity screening; not an independently validated wetness product",
+    "run_id": "3443311cfd019ee94140023b06d6033707efc6f8b776b69b626a165037bb737e",
     "reference_population": "Open-SEA-Rice-10 historical potential-rice support intersected with WorldCover Cropland, pooled across 2023-2025",
+    "application_domain": "unchanged production fixed-support WorldCover Cropland",
     "references": {
       "low_db": -44.82646179199219,
       "high_db": 24.131746292114258
+    },
+    "thresholds": {
+      "p80": {"quantile": 0.8, "threshold": 0.0468, "population_pairs": 1023612828},
+      "p90": {"quantile": 0.9, "threshold": 0.0621, "population_pairs": 1023612828}
     }
   },
   "wi": {
