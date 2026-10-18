@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+import comparison_page
 import method_page
 import production_participating_page
 import production_whole_region_page
@@ -21,7 +22,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-PAGES = ["Method", "Whole region", "Participating areas", "WI · Whole region", "WI · Participating areas"]
+PAGES = [
+    "Method",
+    "RI · All area · Cropland ref",
+    "RI · Fields · Cropland ref",
+    "RI · All area · Rice ref",
+    "RI · Fields · Rice ref",
+    "WI · All area · Rice ref",
+    "WI · Fields · Rice ref",
+    "Comparison",
+]
 
 st.sidebar.title("🌾 SAR Baseline")
 st.sidebar.caption("Isabela · 2023–2025\nPublic research dashboard")
@@ -38,11 +48,17 @@ st.title("Isabela · AWD baseline screening")
 
 if page == "Method":
     method_page.render()
-elif page == "Whole region":
-    production_whole_region_page.render()
-elif page == "Participating areas":
-    production_participating_page.render()
-elif page == "WI · Whole region":
+elif page == "RI · All area · Cropland ref":
+    production_whole_region_page.render(reference="production")
+elif page == "RI · Fields · Cropland ref":
+    production_participating_page.render(reference="production")
+elif page == "RI · All area · Rice ref":
+    production_whole_region_page.render(reference="rice_raw")
+elif page == "RI · Fields · Rice ref":
+    production_participating_page.render(reference="rice_raw")
+elif page == "WI · All area · Rice ref":
     wi_whole_region_page.render()
-else:
+elif page == "WI · Fields · Rice ref":
     wi_participating_page.render()
+else:
+    comparison_page.render()

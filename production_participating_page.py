@@ -28,11 +28,12 @@ def map_view(record, static_section):
     folium.LayerControl(collapsed=False).add_to(m);return m
 
 
-def render():
-    st.subheader('Participating-area results')
-    st.caption('Cropland inside the supplied MARIIS, UCRIS and MRIS fields. Each system uses its own cropping calendar.')
-    version=st.radio('Relative-index reference',['Production · Cropland min/max','Sensitivity · rice-domain min/max'],horizontal=True,key='participating_reference')
-    rice=version.startswith('Sensitivity')
+def render(reference='production'):
+    rice=reference == 'rice_raw'
+    page_name='Rice-derived reference' if rice else 'Cropland reference'
+    key_prefix='ri_fields_rice' if rice else 'ri_fields_cropland'
+    st.subheader(f'RI · Participating fields · {page_name}')
+    st.caption('Cropland inside the supplied MARIIS, UCRIS and MRIS fields. “Rice-derived” describes the fixed endpoints; it does not restrict the displayed pixels to the historical-rice layer.')
     section='rice_raw/participating_areas' if rice else 'production/participating_areas'
     static_section='rice_raw' if rice else 'production'
     meta_key='rice_raw_relative_index' if rice else 'production'
@@ -46,9 +47,9 @@ def render():
 | MARIIS | September–February | May–October |
 | UCRIS | November–April | July–December |
 | MRIS | January–May | August–December |''')
-    system=st.selectbox('Irrigation system',list(d.CALENDAR),key='seasonal26_system')
-    season=st.radio('Cropping season',['Dry','Wet'],horizontal=True,key='seasonal26_season')
-    threshold=st.radio('Change threshold',['p90','p80'],horizontal=True,key='seasonal26_threshold',
+    system=st.selectbox('Irrigation system',list(d.CALENDAR),key=f'{key_prefix}_system')
+    season=st.radio('Cropping season',['Dry','Wet'],horizontal=True,key=f'{key_prefix}_season')
+    threshold=st.radio('Change threshold',['p90','p80'],horizontal=True,key=f'{key_prefix}_threshold',
         format_func=lambda x:'P90 · primary' if x=='p90' else 'P80 · sensitivity')
     threshold_value=d.metadata()[meta_key]['thresholds'][threshold]['threshold']
     reference_note=('Historical potential-rice ∩ Cropland raw min/max (−44.826/+24.132 dB)' if rice
@@ -56,7 +57,7 @@ def render():
     st.caption(f'{reference_note}. {threshold.upper()} uses |ΔI| ≥ {threshold_value:.4f}; P90 retains the largest 10% and P80 the largest 20% of all 2023–2025 Cropland changes.')
     available=windows.loc[windows.system.eq(system)&windows.season.eq(season)&windows.threshold.eq(threshold)].copy()
     chosen=st.selectbox('Window',available.window_id.tolist(),
-        format_func=dict(zip(available.window_id,available.label)).get,key='seasonal26_window')
+        format_func=dict(zip(available.window_id,available.label)).get,key=f'{key_prefix}_window')
     summary=available.loc[available.window_id.eq(chosen)].iloc[0]
     c1,c2,c3,c4=st.columns(4)
     c1.metric('Valid 12-day pairs',f'{int(summary.pairs)}')
@@ -99,7 +100,7 @@ def render():
 
     selected_fields=fields.loc[fields.window_id.eq(chosen)&fields.threshold.eq(threshold)&fields.cropland_pixels.gt(0)].copy()
     with st.expander('Review candidate fields'):
-        minimum=st.number_input('Minimum Cropland pixels',min_value=1,max_value=100,value=5,step=1,key='seasonal26_min_pixels')
+        minimum=st.number_input('Minimum Cropland pixels',min_value=1,max_value=100,value=5,step=1,key=f'{key_prefix}_min_pixels')
         ranked=selected_fields.loc[selected_fields.cropland_pixels.ge(minimum)].sort_values(
             ['percent_pixels_2plus_reversals','mean_reversals','cropland_pixels'],ascending=False)
         show=ranked[['field_uid','field_id','field_area_ha','cropland_pixels','percent_pixels_0_reversals',

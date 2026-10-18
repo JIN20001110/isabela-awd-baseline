@@ -14,7 +14,7 @@ STYLE='''<style>
 
 def render():
     st.subheader('Method')
-    st.caption('One production baseline and two experimental sensitivity screenings, 2023–2025. Neither experimental branch replaces the production baseline.')
+    st.caption('Three fixed-reference SAR formulations, each shown at two spatial scales. The rice layer defines reference endpoints in two experimental branches; it is not automatically the displayed application mask.')
     st.markdown(STYLE+'''<div class="method-flow">
 <div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
 <div class="method-step"><b>2 · Shared β⁰ preparation</b><span>Calibrated σ⁰ + incidence angle<br>β⁰ estimate · 3×3 spatial median</span></div>
@@ -32,13 +32,22 @@ def render():
 <div class="method-step output"><b>10 · Interpretation</b><span>Potential AWD-like SAR patterns<br>Not measured water level or confirmed AWD</span></div>
 </div>''',unsafe_allow_html=True)
 
+    st.markdown('#### How the eight pages fit together')
+    st.markdown('''| Page group | Reference source | Application area | Purpose |
+|---|---|---|---|
+| RI · All area / Participating fields · Cropland ref | Full fixed-support Cropland raw min/max | Cropland in the full AOI or participating fields | Current production baseline |
+| RI · All area / Participating fields · Rice ref | Historical potential-rice ∩ Cropland raw min/max | The same Cropland application areas | Reference-range sensitivity |
+| WI · All area / Participating fields · Rice ref | QC historical-rice P1/P99 | Eligible Cropland in the same two spatial scales | Experimental published-formula evaluation |
+| Comparison | All three configurations | One selected like-for-like spatial window | Direct visual comparison |''')
+    st.info('“Rice ref” means **rice-derived endpoints**. It does not mean that only historical-rice pixels are displayed or that rice cultivation was confirmed in 2023–2025.')
+
     st.markdown('#### Core calculations')
     st.latex(r'\beta^0_{est,dB}=\sigma^0_{dB}-10\log_{10}(\sin\theta)')
     left,middle,right=st.columns(3)
     with left:
         st.markdown('**Baseline A · production relative SAR index**')
-        st.latex(r'I_t=\operatorname{clip}\!\left(\frac{\beta^0_{dry}-\beta^0_t}{\beta^0_{dry}-\beta^0_{wet}},0,1\right)')
-        st.latex(r'\Delta I_t=I_t-I_{t-1}')
+        st.latex(r'RI_t=\operatorname{clip}\!\left(\frac{U_{crop}-\beta^0_t}{U_{crop}-L_{crop}},0,1\right)')
+        st.latex(r'\Delta RI_t=RI_t-RI_{t-1}')
     with middle:
         st.markdown('**Formulation B · rice raw-min/max relative index**')
         st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
@@ -53,11 +62,11 @@ def render():
     wi=d.metadata()['wi']
     refs=wi['references']; wi_thresholds=wi['thresholds']
     st.markdown('#### Fixed screening choices')
-    st.markdown(f'''| Baseline | Fixed reference population and endpoints | P90 · primary | P80 · sensitivity |
-|---|---|---:|---:|
-| Production relative index | Fixed-support Cropland · pooled 2023–2025 min/max | {production['p90']['threshold']:.4f} | {production['p80']['threshold']:.4f} |
-| Rice raw-min/max relative index | Historical potential-rice ∩ Cropland · −44.826/+24.132 dB | {rice_raw['thresholds']['p90']['threshold']:.4f} | {rice_raw['thresholds']['p80']['threshold']:.4f} |
-| Experimental Lovell WI | QC historical-rice P1/P99 · {refs['low_db']:.3f}/{refs['high_db']:.3f} dB | {wi_thresholds['p90']['threshold']:.3f} | {wi_thresholds['p80']['threshold']:.3f} |''')
+    st.markdown(f'''| Formulation | Fixed reference population and endpoints | Application domain | P90 · primary | P80 · sensitivity |
+|---|---|---|---:|---:|
+| Production RI | Fixed-support Cropland · pooled 2023–2025 min/max | Fixed-support Cropland | {production['p90']['threshold']:.4f} | {production['p80']['threshold']:.4f} |
+| Rice-reference RI | Historical potential-rice ∩ Cropland · −44.826/+24.132 dB | The same fixed-support Cropland | {rice_raw['thresholds']['p90']['threshold']:.4f} | {rice_raw['thresholds']['p80']['threshold']:.4f} |
+| Experimental Lovell WI | QC historical-rice P1/P99 · {refs['low_db']:.3f}/{refs['high_db']:.3f} dB | Eligible Cropland after WI numerical checks | {wi_thresholds['p90']['threshold']:.3f} | {wi_thresholds['p80']['threshold']:.3f} |''')
     st.caption('All three thresholds were derived independently from each formulation’s full 2023–2025 eligible Cropland pixel-pair distribution. They are not interchangeable moisture thresholds.')
 
     st.markdown('#### Cropping windows')

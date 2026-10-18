@@ -19,6 +19,7 @@ def require(path: Path) -> None:
 def main() -> None:
     required = [
         ROOT / "app.py",
+        ROOT / "comparison_page.py",
         ROOT / "data/metadata.json",
         ROOT / "data/field_index.parquet",
         ROOT / "data/system_field_coverage.geojson",

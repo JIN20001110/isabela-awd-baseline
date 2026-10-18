@@ -28,26 +28,27 @@ def map_view(record, static_section):
     folium.LayerControl(collapsed=False).add_to(m);return m
 
 
-def render():
-    st.subheader('Whole-region results')
-    st.caption('All fixed-support Cropland across the AOI, including areas outside the supplied fields. Common windows: Wet core May–October, November transition, and Dry core December–April.')
-    version=st.radio('Relative-index reference',['Production · Cropland min/max','Sensitivity · rice-domain min/max'],horizontal=True,key='regional_reference')
-    rice=version.startswith('Sensitivity')
+def render(reference='production'):
+    rice=reference == 'rice_raw'
+    page_name='Rice-derived reference' if rice else 'Cropland reference'
+    key_prefix='ri_all_rice' if rice else 'ri_all_cropland'
+    st.subheader(f'RI · All area · {page_name}')
+    st.caption('All fixed-support Cropland across the AOI, including areas outside the supplied fields. “Rice-derived” describes the reference endpoints; the displayed application area remains Cropland.')
     section='rice_raw/whole_region' if rice else 'production/whole_region'
     static_section='rice_raw' if rice else 'production'
     meta_key='rice_raw_relative_index' if rice else 'production'
     windows=d.table(section,'window_summary.parquet')
     distribution=d.table(section,'area_distribution.parquet')
     records={(row['threshold'],row['window_id']):row for row in d.map_index(section)}
-    season=st.radio('Period',['Wet core','Dry core','November transition'],horizontal=True,key='regional28_season')
-    threshold=st.radio('Change threshold',['p90','p80'],horizontal=True,key='regional28_threshold',
+    season=st.radio('Period',['Wet core','Dry core','November transition'],horizontal=True,key=f'{key_prefix}_season')
+    threshold=st.radio('Change threshold',['p90','p80'],horizontal=True,key=f'{key_prefix}_threshold',
         format_func=lambda x:'P90 · primary' if x=='p90' else 'P80 · sensitivity')
     value=d.metadata()[meta_key]['thresholds'][threshold]['threshold']
     reference_note=('Historical potential-rice ∩ Cropland raw min/max (−44.826/+24.132 dB)' if rice
                     else 'fixed-support Cropland raw min/max')
     st.caption(f'{reference_note}. {threshold.upper()} uses |ΔI| ≥ {value:.4f}; P90 retains the largest 10% and P80 the largest 20% of all 2023–2025 Cropland changes.')
     available=windows.loc[windows.season.eq(season)&windows.threshold.eq(threshold)].copy()
-    chosen=st.selectbox('Window',available.window_id.tolist(),format_func=dict(zip(available.window_id,available.label)).get,key='regional28_window')
+    chosen=st.selectbox('Window',available.window_id.tolist(),format_func=dict(zip(available.window_id,available.label)).get,key=f'{key_prefix}_window')
     summary=available.loc[available.window_id.eq(chosen)].iloc[0]
     c1,c2,c3,c4=st.columns(4)
     c1.metric('Valid 12-day pairs',f'{int(summary.pairs)}');c2.metric('0 reversals',f'{summary.percent_0_reversals:.1f}%')

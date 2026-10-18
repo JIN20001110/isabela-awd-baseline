@@ -8,15 +8,18 @@ The dashboard presents one production baseline and two experimental sensitivity 
 - A rice-reference relative SAR index using the pooled historical potential-rice raw min/max range.
 - An experimental implementation of the Wetness Index printed by Lovell et al. (2019), using QC historical-rice P1/P99 references.
 
-Both approaches identify repeated SAR direction reversals for research screening. They do **not** directly measure water depth, prove wetting or drying, or confirm AWD adoption.
+All three formulations identify repeated SAR direction reversals for research screening. They do **not** directly measure water depth, prove wetting or drying, or confirm AWD adoption.
 
 ## Dashboard pages
 
 1. **Method** — equations, reference choices, workflow, and limitations.
-2. **Whole region** — switch between production and rice-reference relative-index results across the AOI.
-3. **Participating areas** — switch between both relative-index results inside supplied MARIIS, UCRIS, and MRIS fields.
-4. **WI · Whole region** — experimental Lovell-WI regional results and numerical eligibility.
-5. **WI · Participating areas** — searchable field-level time series and baseline comparisons.
+2. **RI · All area · Cropland ref** — production RI across the full Cropland AOI.
+3. **RI · Fields · Cropland ref** — production RI inside supplied MARIIS, UCRIS, and MRIS fields.
+4. **RI · All area · Rice ref** — rice-derived-reference RI across the same full Cropland AOI.
+5. **RI · Fields · Rice ref** — rice-derived-reference RI inside the supplied fields.
+6. **WI · All area · Rice ref** — experimental Lovell-WI regional results and numerical eligibility.
+7. **WI · Fields · Rice ref** — searchable field-level WI time series and comparisons.
+8. **Comparison** — side-by-side circular charts, statistics, and across-window trends for all three versions.
 
 ## Run locally
 

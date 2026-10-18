@@ -10,6 +10,32 @@ import streamlit as st
 import release_data as d
 
 
+COLORS = {"Insufficient": "#979d9f", "0": "#D8C3A5", "1": "#DCEEF7",
+          "2": "#72B7D6", "3+": "#155A8A"}
+
+
+def aggregate_donut(selected):
+    selected = selected.set_index("reversal_group").reindex(
+        ["Insufficient", "0", "1", "2", "3+"]
+    ).fillna(0).reset_index()
+    fig = go.Figure(go.Pie(
+        labels=["Insufficient" if x == "Insufficient" else f"{x} reversals"
+                for x in selected.reversal_group],
+        values=selected.pixels, hole=.58, sort=False,
+        marker=dict(colors=[COLORS[x] for x in selected.reversal_group],
+                    line=dict(color="white", width=1)),
+        customdata=selected[["area_ha", "percent"]], textinfo="label+percent",
+        textposition="inside",
+        hovertemplate="%{label}<br>%{value:,} pixels<br>%{customdata[0]:,.1f} ha<extra></extra>",
+    ))
+    fig.update_layout(
+        template="plotly_white", height=410, margin=dict(l=10, r=10, t=20, b=65),
+        legend=dict(orientation="h", y=-.12, x=.5, xanchor="center"),
+        annotations=[dict(text="<b>Field-area<br>Cropland</b>", x=.5, y=.5, showarrow=False)],
+    )
+    return fig
+
+
 @st.cache_data(show_spinner=False)
 def field_index(run_id):
     return d.field_index()
@@ -110,10 +136,12 @@ def field_map(points, selected_uid):
 
 
 def render():
-    st.subheader("WI · Participating areas")
-    st.caption("Field-level experimental WI screening within the supplied field inventory and each irrigation system's cropping windows.")
+    st.subheader("WI · Participating fields · Rice-derived reference")
+    st.caption("Field-level experimental Lovell WI within the supplied inventory and each irrigation system's cropping windows. QC historical-rice pixels define the endpoints; all eligible Cropland pixels inside participating fields are screened.")
     manifest = d.metadata()
     summaries = d.table("wi", "field_season_summary.parquet")
+    windows = d.table("wi", "window_summary.parquet")
+    distribution = d.table("wi", "reversal_distribution.parquet")
     summaries["field_uid"] = summaries.field_uid.astype(str)
     refs = manifest["wi"]["references"]
     st.info(f"Published WI · fixed QC-rice references {refs['low_db']:.3f}/{refs['high_db']:.3f} dB · no clipping · excluded acquisitions break continuity.")
@@ -129,6 +157,21 @@ def render():
     window_id = st.selectbox("Window", options.window_id.drop_duplicates().tolist(),
                              format_func=dict(zip(options.window_id, options.label)).get, key="wi35_field_window")
     selected_options = options[options.window_id == window_id].copy()
+
+    aggregate = windows[(windows.scope == system) & (windows.threshold == threshold)
+                        & (windows.window_id == window_id)].iloc[0]
+    aggregate_distribution = distribution[(distribution.scope == system)
+                                          & (distribution.threshold == threshold)
+                                          & (distribution.window_id == window_id)].copy()
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Eligible screening area", f"{aggregate.eligible_area_ha:,.1f} ha")
+    c2.metric("0 reversals", f"{100 * int(aggregate_distribution.loc[aggregate_distribution.reversal_group.eq('0'), 'pixels'].sum()) / int(aggregate.eligible_pixels):.1f}%" if aggregate.eligible_pixels else "N/A")
+    c3.metric("1 reversal", f"{100 * int(aggregate_distribution.loc[aggregate_distribution.reversal_group.eq('1'), 'pixels'].sum()) / int(aggregate.eligible_pixels):.1f}%" if aggregate.eligible_pixels else "N/A")
+    two_plus = int(aggregate_distribution.loc[aggregate_distribution.reversal_group.isin(['2', '3+']), 'pixels'].sum())
+    c4.metric("2+ reversals", f"{100 * two_plus / int(aggregate.eligible_pixels):.1f}%" if aggregate.eligible_pixels else "N/A")
+    st.plotly_chart(aggregate_donut(aggregate_distribution), width="stretch")
+    st.caption("Aggregate distribution for eligible Cropland inside the selected irrigation-system fields. Grey = insufficient · light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ reversals.")
+
     field_ids = sorted(selected_options.field_uid.unique().tolist())
     if st.session_state.get("wi35_field_uid") not in field_ids:
         st.session_state["wi35_field_uid"] = "211_1" if "211_1" in field_ids else field_ids[0]

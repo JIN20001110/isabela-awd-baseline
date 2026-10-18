@@ -91,8 +91,8 @@ def existing_summary(scope, threshold, window_id):
 
 
 def render():
-    st.subheader("WI · Whole region")
-    st.caption("Experimental Lovell-inspired screening across the existing analysis footprint. This is separate from the production relative-index baseline.")
+    st.subheader("WI · All area · Rice-derived reference")
+    st.caption("Experimental Lovell WI across the full fixed-support Cropland AOI. The QC historical-rice layer supplies the reference endpoints; it is not the application mask.")
     output, static, manifest = d.DATA / "wi", d.STATIC / "wi", d.metadata()
     windows = d.table("wi", "window_summary.parquet")
     distribution = d.table("wi", "reversal_distribution.parquet")
@@ -105,11 +105,15 @@ def render():
             st.markdown("**Published equation (primary experimental dB branch)**")
             st.latex(r"WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}")
         with b:
-            st.markdown(f"**Fixed QC rice-domain references**  \\\n+Low = **{refs['low_db']:.3f} dB** · High = **{refs['high_db']:.3f} dB**  \\\n+Pooled 2023–2025 P1/P99 after spatial QC.")
+            st.markdown(
+                f"**Fixed QC rice-domain references**  \\\n"
+                f"Low = **{refs['low_db']:.3f} dB** · High = **{refs['high_db']:.3f} dB**  \\\n"
+                "Pooled 2023–2025 P1/P99 after spatial QC."
+            )
             st.caption("The source publication does not resolve whether the equation used dB or linear power. dB is primary here only for consistency with Steps 33–34; linear power is retained as sensitivity output.")
     st.warning("Only observations inside the reference interval and numerically stable are screened. Below-low, above-high, near-singular, missing, and invalid observations remain recorded—not changed to zero or silently clipped.")
 
-    scope = st.selectbox("Analysis scope", ["Full Cropland AOI", "Historical rice overlap", "MARIIS", "UCRIS", "MRIS"], key="wi35_scope")
+    scope = "Full Cropland AOI"
     threshold = st.radio("WI-specific change threshold", ["p90", "p80"], horizontal=True, key="wi35_threshold",
                          format_func=lambda x: "P90 · primary" if x == "p90" else "P80 · sensitivity")
     value = manifest["wi"]["thresholds"][threshold]["threshold"]
