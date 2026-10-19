@@ -4,32 +4,75 @@ import release_data as d
 
 
 STYLE='''<style>
-.method-flow{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:10px;margin:18px 0 24px}
-.method-step{background:#f3f7f5;border:1px solid #cbd9d3;border-top:4px solid #287b70;border-radius:5px;padding:13px 11px;min-height:112px}
+.method-flowchart{margin:18px 0 28px;padding:18px;border:1px solid #d7e1dd;border-radius:12px;background:#fbfcfc}
+.flow-row{display:flex;align-items:stretch;justify-content:center;gap:9px}
+.flow-row.final{flex-wrap:wrap}
+.flow-arrow{display:flex;align-items:center;justify-content:center;color:#55736d;font-size:28px;font-weight:700;min-width:28px}
+.flow-down{text-align:center;color:#55736d;font-size:31px;font-weight:700;line-height:1;margin:10px 0}
+.flow-label{text-align:center;text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:700;color:#6a7d78;margin:4px 0 10px}
+.branch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.branch-flow{display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);align-items:stretch;gap:6px;border-radius:9px;padding:9px}
+.branch-flow.production{background:#edf6fa}.branch-flow.sensitivity{background:#edf8f5}.branch-flow.wi{background:#f3f0fa}
+.method-step{flex:1;background:#f3f7f5;border:1px solid #cbd9d3;border-top:4px solid #287b70;border-radius:7px;padding:12px 11px;min-width:145px;min-height:92px}
 .method-step b{display:block;font-size:14px;margin-bottom:7px;color:#183e39}.method-step span{font-size:12px;color:#526964;line-height:1.45}
-.method-step.production{border-top-color:#277da1;background:#f2f8fb}.method-step.sensitivity{border-top-color:#1b8f75;background:#f1faf7}.method-step.wi{border-top-color:#6655a5;background:#f6f4fb}.method-step.output{border-top-color:#b07b24;background:#fbf7ee}
-@media(max-width:1000px){.method-flow{grid-template-columns:repeat(3,1fr)}}
+.method-step.production{border-top-color:#277da1;background:#f7fbfd}.method-step.sensitivity{border-top-color:#1b8f75;background:#f7fcfa}.method-step.wi{border-top-color:#6655a5;background:#faf9fd}.method-step.output{border-top-color:#b07b24;background:#fbf7ee}
+@media(max-width:1050px){
+  .branch-grid{grid-template-columns:1fr}
+  .flow-row.final{display:grid;grid-template-columns:1fr;max-width:520px;margin:auto}
+  .flow-row.final .flow-arrow{transform:rotate(90deg);min-height:28px}
+}
+@media(max-width:650px){
+  .flow-row.shared{display:grid;grid-template-columns:1fr}
+  .flow-row.shared .flow-arrow{transform:rotate(90deg);min-height:28px}
+  .branch-flow{grid-template-columns:1fr}.branch-flow .flow-arrow{transform:rotate(90deg);min-height:28px}
+}
 </style>'''
 
 
 def render():
     st.subheader('Method')
     st.caption('Three fixed-reference SAR formulations, each shown at two spatial scales. The rice layer defines reference endpoints in two experimental branches; it is not automatically the displayed application mask.')
-    st.markdown(STYLE+'''<div class="method-flow">
-<div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
-<div class="method-step"><b>2 · Shared β⁰ preparation</b><span>Calibrated σ⁰ + incidence angle<br>β⁰ estimate · 3×3 spatial median</span></div>
-<div class="method-step production"><b>3A · Production reference</b><span>Fixed-support Cropland<br>One pooled 2023–2025 min/max range</span></div>
-<div class="method-step sensitivity"><b>3B · Rice raw-extrema reference</b><span>Historical potential-rice ∩ Cropland<br>One pooled 2023–2025 min/max range</span></div>
-<div class="method-step wi"><b>3C · Experimental WI reference</b><span>QC historical-rice domain<br>One pooled 2023–2025 P1/P99 range</span></div>
-<div class="method-step production"><b>4A · Relative SAR index</b><span>Linear normalization + clipping<br>Calculate adjacent ΔI</span></div>
-<div class="method-step sensitivity"><b>4B · Rice-reference relative index</b><span>Same linear equation, different endpoints<br>Calculate adjacent ΔI</span></div>
-<div class="method-step wi"><b>4C · Published Lovell WI</b><span>Nonlinear equation · no clipping<br>Exclude unstable/out-of-range observations</span></div>
-<div class="method-step"><b>5 · Independent thresholds</b><span>Each formulation derives its own P90 primary and P80 sensitivity threshold</span></div>
-<div class="method-step"><b>6 · Temporal continuity</b><span>Use valid adjacent observations only<br>Missing or excluded dates break the sequence</span></div>
-<div class="method-step"><b>7 · Cropping windows</b><span>Whole-region common windows<br>System-specific MARIIS/UCRIS/MRIS windows</span></div>
-<div class="method-step"><b>8 · Direction reversals</b><span>Count significant changes that switch direction within each window</span></div>
-<div class="method-step output"><b>9 · Screening outputs</b><span>0 · 1 · 2 · 3+ reversals<br>Regional maps and field-level review</span></div>
-<div class="method-step output"><b>10 · Interpretation</b><span>Potential AWD-like SAR patterns<br>Not measured water level or confirmed AWD</span></div>
+    st.markdown(STYLE+'''<div class="method-flowchart">
+<div class="flow-label">Shared input and preprocessing</div>
+<div class="flow-row shared">
+  <div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="method-step"><b>2 · Shared β⁰ preparation</b><span>Calibrated σ⁰ + incidence angle<br>β⁰ estimate · 3×3 spatial median</span></div>
+</div>
+<div class="flow-down">↓</div>
+<div class="flow-label">Three fixed-reference branches</div>
+<div class="branch-grid">
+  <div class="branch-flow production">
+    <div class="method-step production"><b>3A · Cropland reference</b><span>Fixed-support Cropland<br>Pooled 2023–2025 min/max</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="method-step production"><b>4A · Production RI</b><span>Linear normalization + clipping<br>Adjacent ΔRI</span></div>
+  </div>
+  <div class="branch-flow sensitivity">
+    <div class="method-step sensitivity"><b>3B · Rice raw reference</b><span>Historical potential-rice ∩ Cropland<br>Pooled min/max</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="method-step sensitivity"><b>4B · Rice-reference RI</b><span>Same linear equation<br>Different fixed endpoints</span></div>
+  </div>
+  <div class="branch-flow wi">
+    <div class="method-step wi"><b>3C · QC rice reference</b><span>Historical-rice domain<br>Pooled P1/P99</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="method-step wi"><b>4C · Published Lovell WI</b><span>Nonlinear · no clipping<br>Numerical eligibility checks</span></div>
+  </div>
+</div>
+<div class="flow-down">↓</div>
+<div class="flow-label">Common temporal screening</div>
+<div class="flow-row final">
+  <div class="method-step"><b>5 · Independent thresholds</b><span>Method-specific P90 primary<br>P80 sensitivity</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="method-step"><b>6 · Temporal continuity</b><span>Valid adjacent observations<br>Gaps break sequences</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="method-step"><b>7 · Cropping windows</b><span>Regional and system-specific calendars</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="method-step"><b>8 · Direction reversals</b><span>Significant changes that switch direction</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="method-step output"><b>9 · Screening outputs</b><span>0 · 1 · 2 · 3+ reversals<br>Maps and field review</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="method-step output"><b>10 · Interpretation</b><span>Potential AWD-like SAR patterns<br>Not confirmed AWD</span></div>
+</div>
 </div>''',unsafe_allow_html=True)
 
     st.markdown('#### How the eight pages fit together')
