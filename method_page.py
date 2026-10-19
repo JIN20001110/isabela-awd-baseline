@@ -116,27 +116,27 @@ Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice te
         st.markdown('**Formulation B · rice raw-min/max relative index**')
         st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
         st.markdown('Uses the same linear equation as Baseline A, but fixes the endpoints to the pooled historical potential-rice domain: **−44.826 dB** and **+24.132 dB**.')
-        st.markdown('Step 36 screened this reference-range sensitivity using independently derived P80/P90 thresholds. Step 31 found that the raw extrema are processed observations but not representative validated wet/dry anchors.')
+        st.markdown('The reference-range sensitivity analysis used independently derived P80/P90 thresholds. Extreme-value diagnostics found that the raw extrema are processed observations but not representative validated wet/dry anchors.')
     with right:
         st.markdown('**Baseline C · experimental Lovell WI**')
         st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
         refs=d.metadata()['wi']['references']
-        st.markdown(f"Uses the Step 32 QC historical-rice P1/P99 references: **{refs['low_db']:.3f} dB** and **{refs['high_db']:.3f} dB**.")
-        st.markdown('Nonlinear and singular when β⁰ equals the high reference. It is not clipped in Step 35.')
+        st.markdown(f"Uses the QC historical-rice P1/P99 references: **{refs['low_db']:.3f} dB** and **{refs['high_db']:.3f} dB**.")
+        st.markdown('Nonlinear and singular when β⁰ equals the high reference. It is not clipped in the experimental screening.')
     st.markdown('''Formulations A and B are the same linear transformation with different reference populations and endpoints; B therefore tests the consequence of selecting a rice-based raw range rather than adding independent moisture information. Formulation C changes both the reference definition and the equation. With identical references and units, the **unclipped** linear index and Lovell WI satisfy $WI=1-1/I$ wherever the denominator exists and $I\ne0$; this identity does not carry over unchanged after clipping or when the references differ.''')
 
     st.markdown('#### How the experimental WI baseline was developed')
     st.markdown('''| Step | Evidence added |
 |---|---|
-| 29 · Rice distribution | Open-SEA-Rice-10 provided a historical potential-rice support layer inside the Cropland AOI. |
-| 30 · Raw references | Raw rice-domain extrema were inspected rather than accepted automatically. |
-| 31 · Extreme diagnostics | Episodic low values and persistent high features near built-up boundaries were traced in space and time. |
-| 32 · Robust references | QC historical-rice pooled 2023–2025 P1/P99 were selected as statistical endpoints. |
-| 33 · Published WI | The printed Lovell equation was reproduced in separate dB and linear-power branches. |
-| 34 · Temporal feasibility | Change direction, singularity risk, reversals, seasons, and rainfall consistency were diagnosed. |
-| 35 · Baseline screening | WI-specific P90/P80 thresholds, regional/field results, and comparison with Baseline A were produced. |''')
-    st.markdown('**Step 36 · Rice raw-min/max sensitivity:** the same linear relative-index equation was rerun using the pooled historical-rice raw extrema, with independent P80/P90 thresholds and full regional/field outputs. The resulting reversal distributions were nearly unchanged from production, showing that this endpoint change primarily rescales the index rather than adding new temporal information.')
-    st.markdown('The Step 35 primary branch uses the unchanged published equation with dB values for consistency with Steps 33–34. The publication does not resolve the calculation unit, so linear power remains a separate sensitivity result. Only inside-range, numerically stable observations are screened; exclusions are retained explicitly and break temporal continuity.')
+| Step 1 · Rice distribution | Open-SEA-Rice-10 provided a historical potential-rice support layer inside the Cropland AOI. |
+| Step 2 · Raw references | Raw rice-domain extrema were inspected rather than accepted automatically. |
+| Step 3 · Extreme diagnostics | Episodic low values and persistent high features near built-up boundaries were traced in space and time. |
+| Step 4 · Robust references | QC historical-rice pooled 2023–2025 P1/P99 were selected as statistical endpoints. |
+| Step 5 · Published WI | The printed Lovell equation was reproduced in separate dB and linear-power branches. |
+| Step 6 · Temporal feasibility | Change direction, singularity risk, reversals, seasons, and rainfall consistency were diagnosed. |
+| Step 7 · Baseline screening | WI-specific P90/P80 thresholds, regional/field results, and comparison with Production RI were produced. |''')
+    st.markdown('**Step 8 · Rice raw-min/max sensitivity:** the same linear relative-index equation was rerun using the pooled historical-rice raw extrema, with independent P80/P90 thresholds and full regional/field outputs. The resulting reversal distributions were nearly unchanged from production, showing that this endpoint change primarily rescales the index rather than adding new temporal information.')
+    st.markdown('The primary WI branch uses the unchanged published equation with dB values. The publication does not resolve the calculation unit, so linear power remains a separate sensitivity result. Only inside-range, numerically stable observations are screened; exclusions are retained explicitly and break temporal continuity.')
 
     with st.expander('Scientific interpretation and limitations'):
         st.markdown('''- Historical potential rice does not confirm rice cultivation in every 2023–2025 season.
@@ -147,4 +147,4 @@ Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice te
 - The approximately 12-day sampling interval can miss shorter physical changes.
 - The Lovell WI has a singularity at the high reference; near-singular and out-of-range observations are excluded from conservative screening but remain reported.
 - Neither formula is proven superior for retrieving water conditions in Isabela.''')
-    st.info('Step 35 result language: potential AWD-like SAR patterns for pre-intervention prioritization—not confirmed AWD adoption.')
+    st.info('Result language: potential AWD-like SAR patterns for pre-intervention prioritization—not confirmed AWD adoption.')
