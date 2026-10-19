@@ -1,12 +1,14 @@
-"""English method page for the production, reference-sensitivity and WI branches."""
+"""Concise method overview for the three formulations and two spatial scales."""
+from __future__ import annotations
+
 import streamlit as st
+
 import release_data as d
 
 
-STYLE='''<style>
+STYLE = '''<style>
 .method-flowchart{margin:18px 0 28px;padding:18px;border:1px solid #d7e1dd;border-radius:12px;background:#fbfcfc}
-.flow-row{display:flex;align-items:stretch;justify-content:center;gap:9px}
-.flow-row.final{flex-wrap:wrap}
+.flow-row{display:flex;align-items:stretch;justify-content:center;gap:9px}.flow-row.final{flex-wrap:wrap}
 .flow-arrow{display:flex;align-items:center;justify-content:center;color:#55736d;font-size:28px;font-weight:700;min-width:28px}
 .flow-down{text-align:center;color:#55736d;font-size:31px;font-weight:700;line-height:1;margin:10px 0}
 .flow-label{text-align:center;text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:700;color:#6a7d78;margin:4px 0 10px}
@@ -16,23 +18,16 @@ STYLE='''<style>
 .method-step{flex:1;background:#f3f7f5;border:1px solid #cbd9d3;border-top:4px solid #287b70;border-radius:7px;padding:12px 11px;min-width:145px;min-height:92px}
 .method-step b{display:block;font-size:14px;margin-bottom:7px;color:#183e39}.method-step span{font-size:12px;color:#526964;line-height:1.45}
 .method-step.production{border-top-color:#277da1;background:#f7fbfd}.method-step.sensitivity{border-top-color:#1b8f75;background:#f7fcfa}.method-step.wi{border-top-color:#6655a5;background:#faf9fd}.method-step.output{border-top-color:#b07b24;background:#fbf7ee}
-@media(max-width:1050px){
-  .branch-grid{grid-template-columns:1fr}
-  .flow-row.final{display:grid;grid-template-columns:1fr;max-width:520px;margin:auto}
-  .flow-row.final .flow-arrow{transform:rotate(90deg);min-height:28px}
-}
-@media(max-width:650px){
-  .flow-row.shared{display:grid;grid-template-columns:1fr}
-  .flow-row.shared .flow-arrow{transform:rotate(90deg);min-height:28px}
-  .branch-flow{grid-template-columns:1fr}.branch-flow .flow-arrow{transform:rotate(90deg);min-height:28px}
-}
+.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 18px}
+.summary-card{border:1px solid #d7e1dd;border-radius:9px;padding:14px;background:white;min-height:145px}
+.summary-card b{display:block;color:#23445c;margin-bottom:7px}.summary-card span{font-size:13px;line-height:1.5;color:#4d6260}
+.stat-flow{display:flex;align-items:stretch;gap:8px;margin:10px 0 16px}.stat-box{flex:1;border:1px solid #d7e1dd;border-radius:8px;padding:12px;background:#f8faf9}.stat-box b{display:block;color:#23445c;margin-bottom:5px}.stat-box span{font-size:12px;line-height:1.45;color:#526964}.stat-arrow{display:flex;align-items:center;color:#55736d;font-size:24px;font-weight:700}
+@media(max-width:1050px){.branch-grid,.summary-grid{grid-template-columns:1fr}.flow-row.final,.stat-flow{display:grid;grid-template-columns:1fr;max-width:620px;margin-left:auto;margin-right:auto}.flow-row.final .flow-arrow,.stat-arrow{transform:rotate(90deg);min-height:28px;justify-content:center}}
+@media(max-width:650px){.flow-row.shared{display:grid;grid-template-columns:1fr}.flow-row.shared .flow-arrow{transform:rotate(90deg);min-height:28px}.branch-flow{grid-template-columns:1fr}.branch-flow .flow-arrow{transform:rotate(90deg);min-height:28px}}
 </style>'''
 
 
-def render():
-    st.subheader('Method')
-    st.caption('Three fixed-reference SAR formulations, each shown at two spatial scales. The rice layer defines reference endpoints in two experimental branches; it is not automatically the displayed application mask.')
-    st.markdown(STYLE+'''<div class="method-flowchart">
+FLOW = '''<div class="method-flowchart">
 <div class="flow-label">Shared input and preprocessing</div>
 <div class="flow-row shared">
   <div class="method-step"><b>1 · Study observations</b><span>Isabela AOI · 2023–2025<br>S1A descending R032 · 88 dates</span></div>
@@ -61,133 +56,138 @@ def render():
 <div class="flow-down">↓</div>
 <div class="flow-label">Common temporal screening</div>
 <div class="flow-row final">
-  <div class="method-step"><b>5 · Independent thresholds</b><span>Method-specific P90 primary<br>P80 sensitivity</span></div>
+  <div class="method-step"><b>5 · Threshold</b><span>Method-specific P90 primary<br>P80 sensitivity</span></div>
   <div class="flow-arrow">→</div>
-  <div class="method-step"><b>6 · Temporal continuity</b><span>Valid adjacent observations<br>Gaps break sequences</span></div>
+  <div class="method-step"><b>6 · Adjacent change</b><span>Valid consecutive observations<br>Gaps break sequences</span></div>
   <div class="flow-arrow">→</div>
   <div class="method-step"><b>7 · Cropping windows</b><span>Regional and system-specific calendars</span></div>
   <div class="flow-arrow">→</div>
-  <div class="method-step"><b>8 · Direction reversals</b><span>Significant changes that switch direction</span></div>
+  <div class="method-step"><b>8 · Reversals</b><span>Significant changes that switch direction</span></div>
   <div class="flow-arrow">→</div>
-  <div class="method-step output"><b>9 · Screening outputs</b><span>0 · 1 · 2 · 3+ reversals<br>Maps and field review</span></div>
+  <div class="method-step output"><b>9 · Spatial statistics</b><span>0 · 1 · 2 · 3+ reversals<br>Maps and field review</span></div>
   <div class="flow-arrow">→</div>
   <div class="method-step output"><b>10 · Interpretation</b><span>Potential AWD-like SAR patterns<br>Not confirmed AWD</span></div>
 </div>
-</div>''',unsafe_allow_html=True)
+</div>'''
 
-    st.markdown('#### How the eight pages fit together')
-    st.markdown('''| Page group | Reference source | Application area | Purpose |
-|---|---|---|---|
-| RI · All area / Participating fields · Cropland ref | Full fixed-support Cropland raw min/max | Cropland in the full AOI or participating fields | Current production baseline |
-| RI · All area / Participating fields · Rice ref | Historical potential-rice ∩ Cropland raw min/max | The same Cropland application areas | Reference-range sensitivity |
-| WI · All area / Participating fields · Rice ref | QC historical-rice P1/P99 | Eligible Cropland in the same two spatial scales | Experimental published-formula evaluation |
-| Comparison | All three configurations | One selected like-for-like spatial window | Direct visual comparison |''')
-    st.info('“Rice ref” means **rice-derived endpoints**. It does not mean that only historical-rice pixels are displayed or that rice cultivation was confirmed in 2023–2025.')
 
-    st.markdown('#### Core calculations')
-    st.latex(r'\beta^0_{est,dB}=\sigma^0_{dB}-10\log_{10}(\sin\theta)')
-    left,middle,right=st.columns(3)
-    with left:
-        st.markdown('**Baseline A · production relative SAR index**')
-        st.latex(r'RI_t=\operatorname{clip}\!\left(\frac{U_{crop}-\beta^0_t}{U_{crop}-L_{crop}},0,1\right)')
-        st.latex(r'\Delta RI_t=RI_t-RI_{t-1}')
-    with middle:
-        st.markdown('**Formulation B · rice raw-min/max relative index**')
-        st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
-        st.latex(r'L_{rice}=-44.826,\quad U_{rice}=24.132\ \mathrm{dB}')
-    with right:
-        st.markdown('**Baseline C · experimental Lovell WI**')
-        st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
-        st.latex(r'\Delta WI_t=WI_t-WI_{t-1}')
+def _comparison_facts() -> tuple[float, float, float, float, float]:
+    gaps = []
+    for scope in ["whole_region", "participating_areas"]:
+        left = d.table(f"production/{scope}", "window_summary.parquet")
+        right = d.table(f"rice_raw/{scope}", "window_summary.parquet")
+        merged = left.merge(right, on=["threshold", "window_id"], suffixes=("_production", "_rice"))
+        gaps.extend((merged.percent_2plus_reversals_production
+                     - merged.percent_2plus_reversals_rice).abs().tolist())
+    whole = d.table("production/whole_region", "window_summary.parquet")
+    p90 = whole[whole.threshold.eq("p90")]
+    wet = p90[p90.season.eq("Wet core")].percent_2plus_reversals
+    dry = p90[p90.season.eq("Dry core")].percent_2plus_reversals
+    return max(gaps), float(wet.min()), float(wet.max()), float(dry.min()), float(dry.max())
 
-    production=d.metadata()['production']['thresholds']
-    rice_raw=d.metadata()['rice_raw_relative_index']
-    wi=d.metadata()['wi']
-    refs=wi['references']; wi_thresholds=wi['thresholds']
-    st.markdown('#### Fixed screening choices')
-    st.markdown(f'''| Formulation | Fixed reference population and endpoints | Application domain | P90 · primary | P80 · sensitivity |
-|---|---|---|---:|---:|
-| Production RI | Fixed-support Cropland · pooled 2023–2025 min/max | Fixed-support Cropland | {production['p90']['threshold']:.4f} | {production['p80']['threshold']:.4f} |
-| Rice-reference RI | Historical potential-rice ∩ Cropland · −44.826/+24.132 dB | The same fixed-support Cropland | {rice_raw['thresholds']['p90']['threshold']:.4f} | {rice_raw['thresholds']['p80']['threshold']:.4f} |
-| Experimental Lovell WI | QC historical-rice P1/P99 · {refs['low_db']:.3f}/{refs['high_db']:.3f} dB | Eligible Cropland after WI numerical checks | {wi_thresholds['p90']['threshold']:.3f} | {wi_thresholds['p80']['threshold']:.3f} |''')
-    st.caption('All three thresholds were derived independently from each formulation’s full 2023–2025 eligible Cropland pixel-pair distribution. They are not interchangeable moisture thresholds.')
 
-    st.markdown('#### Cropping windows')
-    st.markdown('''| System | Dry | Wet |
+def render():
+    st.subheader("Method")
+    st.caption("A regional pre-intervention SAR screening framework—not a field-water-level measurement or confirmed AWD classifier.")
+    st.markdown(STYLE + FLOW, unsafe_allow_html=True)
+
+    st.markdown("### Why there are six result views")
+    st.markdown("**Three index configurations × two spatial scales = six result views.** These are not six independent methods or six separate datasets.")
+    st.markdown('''| Index configuration | All area | Participating fields |
 |---|---|---|
-| MARIIS | Sep–Feb | May–Oct |
-| UCRIS | Nov–Apr | Jul–Dec |
-| MRIS | Jan–May | Aug–Dec |''')
-    st.info('Main interpretation: areas with repeated reversals are priority candidates for wetting–drying review. They are not confirmed AWD adoption.')
-    st.markdown('**Result scales:** Whole region uses all fixed-support Cropland in the AOI. Participating areas use the supplied irrigation-system fields and each system’s own calendar.')
-    with st.expander('Data and limitations'):
-        st.markdown('''- β⁰ is estimated from GEE-calibrated σ⁰ and incidence angle; it is not reconstructed from raw DN and ESA calibration LUTs.
-- Lex’s 2026 cropping calendar is repeated over 2023–2025 as an assumption.
-- Rainfall, crop growth, harvest, roughness and mixed pixels may also produce reversals.
-- Results describe supplied field coverage, not official irrigation-system boundaries.''')
+| Production RI · Cropland reference | Full fixed-support Cropland AOI | Cropland inside supplied MARIIS/UCRIS/MRIS fields |
+| Rice-reference RI · rice-derived reference | Same full Cropland AOI | Same participating-field Cropland |
+| Experimental Lovell WI · QC rice-derived reference | Eligible Cropland in the full AOI | Eligible Cropland inside participating fields |''')
+    st.caption("The dashboard therefore contains eight pages: Method + six result views + Comparison.")
 
-    st.divider()
-    st.subheader('Reference Formulations and Literature Origin')
-    st.caption('The rice-reference relative index isolates the effect of changing endpoints; the experimental WI also changes the equation.')
+    st.markdown("### Why three index configurations are shown")
+    st.markdown('''<div class="summary-grid">
+<div class="summary-card"><b>1 · Production RI</b><span>We had no local Isabela wet/dry observations, so the first transparent baseline used one fixed min/max range from the available Cropland domain.</span></div>
+<div class="summary-card"><b>2 · Rice-reference RI</b><span>Cropland may include non-rice crops, and its extrema may not represent rice conditions. We therefore repeated the same linear RI using endpoints derived from historical potential-rice pixels.</span></div>
+<div class="summary-card"><b>3 · Experimental Lovell WI</b><span>The paper used field-informed wet/dry test-plot references, which we do not have locally. Its printed nonlinear formula, calculation unit and derivation are also insufficiently explained, so we reproduce it separately and label it experimental.</span></div>
+</div>''', unsafe_allow_html=True)
+    st.info("“Rice reference” describes where the fixed endpoints came from. It does **not** mean that only historical-rice pixels are displayed, or that rice cultivation was confirmed in every 2023–2025 season.")
 
-    st.markdown('#### Formula provenance')
-    c1,c2,c3=st.columns(3)
-    with c1:
-        st.markdown('''**Shoshany et al. (2000)**<br>
-Introduced a normalized backscatter moisture index for comparing two SAR observations while reducing multiplicative soil/roughness effects.''')
-        st.latex(r'NBMI=\frac{\sigma^0_{t1}+\sigma^0_{t2}}{\sigma^0_{t1}-\sigma^0_{t2}}')
-        st.markdown('[Original article](https://doi.org/10.1080/01431160050029620)')
-    with c2:
-        st.markdown('''**Hassan & Bourque (2015)**<br>
-Developed a RADARSAT-1 wetness index using an instantaneous β⁰ value and an image-derived minimum.''')
-        st.latex(r'WI_{HB}=\frac{\beta^0_{min}-\beta^0_{ins}}{\beta^0_{min}+\beta^0_{ins}}')
-        st.markdown('[Original chapter](https://doi.org/10.1007/978-94-017-9813-6_15)')
-    with c3:
-        st.markdown('''**Lovell et al. (2019)**<br>
-Applied a different nonlinear expression to Sentinel-1 β⁰ and metered rice test-plot extrema for AWD change detection.''')
-        st.latex(r'WI_{L}=\frac{\beta^0_{min}-\beta^0_{ins}}{\beta^0_{max}-\beta^0_{ins}}')
-        st.markdown('[Original article](https://doi.org/10.3390/ijgi8070312)')
-    st.warning('Lovell et al. (2019) followed the broader idea of earlier SAR-based relative wetness research, but printed a modified WI equation. In the verifiable literature reviewed for this project, we did not find an explicit mathematical derivation or a sufficiently detailed explanation for that modification. The formula is therefore reproduced as published and evaluated experimentally, without assuming that the modification has been independently justified.')
+    st.markdown("### What is actually counted")
+    st.markdown('''<div class="stat-flow">
+<div class="stat-box"><b>Index at each date</b><span>RI or WI is calculated for each eligible pixel and Sentinel-1 acquisition.</span></div>
+<div class="stat-arrow">→</div>
+<div class="stat-box"><b>Adjacent change</b><span>ΔX<sub>t</sub> = X<sub>t</sub> − X<sub>t−1</sub>, usually across approximately 12 days.</span></div>
+<div class="stat-arrow">→</div>
+<div class="stat-box"><b>Significant change</b><span>|ΔX| must reach the method-specific P90 or P80 threshold.</span></div>
+<div class="stat-arrow">→</div>
+<div class="stat-box"><b>Direction reversal</b><span>The next significant change moves in the opposite direction within the same uninterrupted cropping window.</span></div>
+<div class="stat-arrow">→</div>
+<div class="stat-box"><b>Spatial statistic</b><span>Share of eligible pixels with 0, 1, 2 or 3+ reversals.</span></div>
+</div>''', unsafe_allow_html=True)
 
-    st.markdown('#### Our three formulations')
-    left,middle,right=st.columns(3)
+    left, right = st.columns(2)
     with left:
-        st.markdown('**Baseline A · production relative SAR index**')
-        st.latex(r'I_t=\operatorname{clip}\!\left(\frac{\beta^0_{high}-\beta^0_t}{\beta^0_{high}-\beta^0_{low}},0,1\right)')
-        st.markdown('Linear normalization followed by clipping. Its fixed endpoints come from the production **Cropland** domain.')
-    with middle:
-        st.markdown('**Formulation B · rice raw-min/max relative index**')
-        st.latex(r'I^{rice\,raw}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)')
-        st.markdown('Uses the same linear equation as Baseline A, but fixes the endpoints to the pooled historical potential-rice domain: **−44.826 dB** and **+24.132 dB**.')
-        st.markdown('The reference-range sensitivity analysis used independently derived P80/P90 thresholds. Extreme-value diagnostics found that the raw extrema are processed observations but not representative validated wet/dry anchors.')
+        st.markdown("**P90 · primary result**")
+        st.markdown("Keeps the largest **10%** of eligible adjacent-change magnitudes. It is more conservative and reduces small fluctuations.")
     with right:
-        st.markdown('**Baseline C · experimental Lovell WI**')
-        st.latex(r'WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}')
-        refs=d.metadata()['wi']['references']
-        st.markdown(f"Uses the QC historical-rice P1/P99 references: **{refs['low_db']:.3f} dB** and **{refs['high_db']:.3f} dB**.")
-        st.markdown('Nonlinear and singular when β⁰ equals the high reference. It is not clipped in the experimental screening.')
-    st.markdown('''Formulations A and B are the same linear transformation with different reference populations and endpoints; B therefore tests the consequence of selecting a rice-based raw range rather than adding independent moisture information. Formulation C changes both the reference definition and the equation. With identical references and units, the **unclipped** linear index and Lovell WI satisfy $WI=1-1/I$ wherever the denominator exists and $I\ne0$; this identity does not carry over unchanged after clipping or when the references differ.''')
+        st.markdown("**P80 · sensitivity result**")
+        st.markdown("Keeps the largest **20%**. It tests whether the spatial pattern remains visible when weaker changes are included.")
+    st.caption("P90/P80 are empirical SAR-change thresholds, not physical water-depth, wet/dry or AWD thresholds. Each formulation derives its own values, so the numerical thresholds are not directly comparable.")
 
-    st.markdown('#### How the experimental WI baseline was developed')
-    st.markdown('''| Step | Evidence added |
+    st.markdown("### The Comparison page is the key result")
+    gap, wet_low, wet_high, dry_low, dry_high = _comparison_facts()
+    st.markdown(f'''- The two linear RI versions are almost identical: their largest difference in the **2+ reversal share is only {gap:.3f} percentage points**.
+- The experimental WI can produce different percentages because it is nonlinear and excludes numerically unstable or out-of-range observations, but the broad seasonal/spatial comparison remains available.
+- At whole-area P90, Production RI records **{wet_low:.2f}–{wet_high:.2f}%** with 2+ reversals in Wet-core windows, compared with **{dry_low:.2f}–{dry_high:.2f}%** in Dry-core windows.''')
+    st.success("Repeated reversals are generally more common in Wet-core windows, where rainfall can also drive SAR changes. Lower Dry-core reversal shares mean that the baseline provides **no strong regional evidence of widespread pre-existing AWD**. This is suggestive—not proof that AWD was absent—because crop timing, rainfall, canopy effects and 12-day sampling can hide or mimic changes.")
+
+    st.markdown("### Cropping windows used")
+    st.markdown('''| Spatial view | Dry window | Wet window |
+|---|---|---|
+| Whole area | December–April | May–October |
+| MARIIS | September–February | May–October |
+| UCRIS | November–April | July–December |
+| MRIS | January–May | August–December |''')
+    st.caption("The irrigation-authority 2026 calendar is repeated over 2023–2025 as an explicit simplifying assumption.")
+
+    production = d.metadata()["production"]["thresholds"]
+    rice_raw = d.metadata()["rice_raw_relative_index"]
+    wi = d.metadata()["wi"]
+    refs = wi["references"]
+    with st.expander("Equations, reference values and thresholds"):
+        st.latex(r"\beta^0_{est,dB}=\sigma^0_{dB}-10\log_{10}(\sin\theta)")
+        a, b, c = st.columns(3)
+        with a:
+            st.markdown("**Production RI**")
+            st.latex(r"RI_t=\operatorname{clip}\!\left(\frac{U_{crop}-\beta^0_t}{U_{crop}-L_{crop}},0,1\right)")
+            st.markdown(f"P90 **{production['p90']['threshold']:.4f}** · P80 **{production['p80']['threshold']:.4f}**")
+        with b:
+            st.markdown("**Rice-reference RI**")
+            st.latex(r"RI^{rice}_t=\operatorname{clip}\!\left(\frac{U_{rice}-\beta^0_t}{U_{rice}-L_{rice}},0,1\right)")
+            st.markdown(f"L/U **{rice_raw['references']['low_db']:.3f}/{rice_raw['references']['high_db']:.3f} dB**")
+            st.markdown(f"P90 **{rice_raw['thresholds']['p90']['threshold']:.4f}** · P80 **{rice_raw['thresholds']['p80']['threshold']:.4f}**")
+        with c:
+            st.markdown("**Experimental Lovell WI**")
+            st.latex(r"WI_t=\frac{\beta^0_{low}-\beta^0_t}{\beta^0_{high}-\beta^0_t}")
+            st.markdown(f"P1/P99 **{refs['low_db']:.3f}/{refs['high_db']:.3f} dB**")
+            st.markdown(f"P90 **{wi['thresholds']['p90']['threshold']:.3f}** · P80 **{wi['thresholds']['p80']['threshold']:.3f}**")
+
+    with st.expander("Why the published WI remains experimental here"):
+        st.markdown('''Lovell et al. (2019) used extrema from metered rice test plots informed by field observations. We do not have equivalent wet/dry observations in Isabela. The paper also does not clearly resolve the equation's calculation unit, and its printed formula modifies earlier wetness-index ideas without a verifiable mathematical derivation sufficient to remove the ambiguity. We therefore reproduce the published equation without silently changing it, apply explicit numerical eligibility checks, and avoid calling the output physically validated wetness.''')
+        st.markdown("[Lovell et al. (2019)](https://doi.org/10.3390/ijgi8070312)")
+
+    with st.expander("How the experimental WI baseline was developed"):
+        st.markdown('''| Step | Evidence added |
 |---|---|
-| Step 1 · Rice distribution | Open-SEA-Rice-10 provided a historical potential-rice support layer inside the Cropland AOI. |
-| Step 2 · Raw references | Raw rice-domain extrema were inspected rather than accepted automatically. |
-| Step 3 · Extreme diagnostics | Episodic low values and persistent high features near built-up boundaries were traced in space and time. |
+| Step 1 · Rice distribution | Open-SEA-Rice-10 supplied historical potential-rice support inside the Cropland AOI. |
+| Step 2 · Raw references | Rice-domain extrema were inspected rather than accepted automatically. |
+| Step 3 · Extreme diagnostics | Low and high tails were traced through space, time and preprocessing. |
 | Step 4 · Robust references | QC historical-rice pooled 2023–2025 P1/P99 were selected as statistical endpoints. |
-| Step 5 · Published WI | The printed Lovell equation was reproduced in separate dB and linear-power branches. |
-| Step 6 · Temporal feasibility | Change direction, singularity risk, reversals, seasons, and rainfall consistency were diagnosed. |
-| Step 7 · Baseline screening | WI-specific P90/P80 thresholds, regional/field results, and comparison with Production RI were produced. |''')
-    st.markdown('**Step 8 · Rice raw-min/max sensitivity:** the same linear relative-index equation was rerun using the pooled historical-rice raw extrema, with independent P80/P90 thresholds and full regional/field outputs. The resulting reversal distributions were nearly unchanged from production, showing that this endpoint change primarily rescales the index rather than adding new temporal information.')
-    st.markdown('The primary WI branch uses the unchanged published equation with dB values. The publication does not resolve the calculation unit, so linear power remains a separate sensitivity result. Only inside-range, numerically stable observations are screened; exclusions are retained explicitly and break temporal continuity.')
+| Step 5 · Published WI | The printed Lovell equation was reproduced in dB and linear-power branches. |
+| Step 6 · Temporal feasibility | Direction, singularity risk, reversals, seasons and rainfall consistency were diagnosed. |
+| Step 7 · Baseline screening | WI-specific P90/P80 thresholds and regional/field results were produced. |''')
 
-    with st.expander('Scientific interpretation and limitations'):
-        st.markdown('''- Historical potential rice does not confirm rice cultivation in every 2023–2025 season.
+    with st.expander("Scientific limitations"):
+        st.markdown('''- Historical potential rice does not confirm rice cultivation in every study season.
 - There are no local Isabela field water-level measurements for direct hydrological validation.
-- Lower β⁰ is provisionally interpreted as wetter-like and higher β⁰ as drier-like; canopy, roughness, rainfall, harvest and mixed pixels can alter that relationship.
-- WI is unitless—not soil-moisture percentage or water depth.
-- A mathematical reversal is not a complete AWD cycle and cannot establish an irrigation date.
-- The approximately 12-day sampling interval can miss shorter physical changes.
-- The Lovell WI has a singularity at the high reference; near-singular and out-of-range observations are excluded from conservative screening but remain reported.
-- Neither formula is proven superior for retrieving water conditions in Isabela.''')
-    st.info('Result language: potential AWD-like SAR patterns for pre-intervention prioritization—not confirmed AWD adoption.')
+- Rainfall, canopy, crop stage, harvest, roughness and mixed pixels can change β⁰.
+- A mathematical reversal is not a complete AWD cycle or an irrigation date.
+- Approximately 12-day sampling can miss shorter changes.
+- WI near-singular and out-of-range observations are excluded explicitly and break continuity.
+- Results indicate potential AWD-like SAR patterns, not confirmed AWD adoption.''')
