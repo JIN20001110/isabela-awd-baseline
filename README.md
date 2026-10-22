@@ -20,6 +20,7 @@ All three formulations identify repeated SAR direction reversals for research sc
 6. **WI · All area · Rice ref** — experimental Lovell-WI regional results and numerical eligibility.
 7. **WI · Fields · Rice ref** — searchable field-level WI time series and comparisons.
 8. **Comparison** — side-by-side circular charts, statistics, and across-window trends for all three versions.
+9. **Reversal timing & calendar core** — participating-field sensitivity test comparing full assumed calendar windows with independently recalculated 12- and 24-day calendar-core windows. It reports timing, temporal coverage, and persistence of repeated RI/WI signal reversals; it is not a crop-stage or AWD classifier.
 
 ## Run locally
 
@@ -50,6 +51,8 @@ The release excludes:
 - computation checkpoints and temporary files.
 
 See [Data provenance](docs/data-provenance.md), the [Step 35 WI report](docs/step35-technical-report.md), the [Step 36 rice-reference report](docs/step36-technical-report.md), and the [all-version spatial statistics workbook](docs/37o-all-versions-spatial-statistics.xlsx) for details.
+
+The calendar-core diagnostic uses the irrigation-system calendars as assumed date windows only. Its core period is not a confirmed growing stage: field-specific planting, harvest, and crop presence are not available. Full-season and calendar-core results use the same frozen RI/WI thresholds, but the latter is recalculated from observations wholly inside the restricted window and consequently has fewer observation opportunities.
 
 ## Scientific interpretation
 

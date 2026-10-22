@@ -4,6 +4,7 @@ from __future__ import annotations
 import streamlit as st
 
 import comparison_page
+import calendar_core_page
 import method_page
 import production_participating_page
 import production_whole_region_page
@@ -31,6 +32,7 @@ PAGES = [
     "WI · All area · Rice ref",
     "WI · Fields · Rice ref",
     "Comparison",
+    "Reversal timing & calendar core",
 ]
 
 st.sidebar.title("🌾 SAR Baseline")
@@ -60,5 +62,7 @@ elif page == "WI · All area · Rice ref":
     wi_whole_region_page.render()
 elif page == "WI · Fields · Rice ref":
     wi_participating_page.render()
-else:
+elif page == "Comparison":
     comparison_page.render()
+else:
+    calendar_core_page.render()

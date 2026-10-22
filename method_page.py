@@ -98,7 +98,7 @@ def render():
 | Production RI · Cropland reference | Full fixed-support Cropland AOI | Cropland inside supplied MARIIS/UCRIS/MRIS fields |
 | Rice-reference RI · rice-derived reference | Same full Cropland AOI | Same participating-field Cropland |
 | Experimental Lovell WI · QC rice-derived reference | Eligible Cropland in the full AOI | Eligible Cropland inside participating fields |''')
-    st.caption("The dashboard therefore contains eight pages: Method + six result views + Comparison.")
+    st.caption("The dashboard contains the core method and result views, plus a separate calendar-core sensitivity page. That diagnostic does not alter the baseline screening outputs.")
 
     st.markdown("### Why three index configurations are shown")
     st.markdown('''<div class="summary-grid">
