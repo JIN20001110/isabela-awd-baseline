@@ -73,7 +73,7 @@ def _reversal_donut(full, core):
 
 
 def render():
-    st.subheader("Reversal timing & calendar-core sensitivity")
+    st.subheader("Appendix: Reversal timing & calendar-core sensitivity")
     st.caption("Participating fields only · separate exploratory diagnostic · does not change the production RI/WI baseline.")
     st.warning("The irrigation-system calendars are assumed reference windows, not field-level planting, harvest, or crop-stage observations. A calendar-core signal is not proof of AWD.")
     loaded = _load()
