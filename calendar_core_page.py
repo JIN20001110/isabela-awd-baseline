@@ -58,14 +58,14 @@ def _reversal_donut(full, core):
     for position, (label, row) in enumerate((("Full season", full), ("Calendar core", core)), 1):
         values = [int(row[column[item]]) for item in categories]
         total = sum(values)
+        percentages = [100 * value / total if total else 0 for value in values]
         fig.add_trace(go.Pie(labels=[f"{item} reversals" if item != ">=5" else "≥5 reversals" for item in categories],
                              values=values, hole=.60, sort=False, name=label, showlegend=position == 1,
                              marker=dict(colors=[REVERSAL_COLORS[item] for item in categories], line=dict(color="white", width=1)),
-                             customdata=[[100 * value / total if total else 0, value] for value in values],
-                             textinfo="percent", textposition="inside",
+                             customdata=[[percent, value] for percent, value in zip(percentages, values)],
+                             text=[f"{percent:.1f}%" if percent >= 1 else "" for percent in percentages],
+                             textinfo="text", textposition="inside",
                              hovertemplate="%{label}<br>%{customdata[0]:.1f}% of participating-field cropland pixels<br>%{customdata[1]:,} pixels<extra></extra>"), row=1, col=position)
-        fig.add_annotation(text=f"<b>{label}</b><br>{total:,} cropland pixels", x=.23 if position == 1 else .77, y=.5,
-                           showarrow=False, font=dict(size=13, color="#263238"))
     fig.update_layout(template="plotly_white", height=410, margin=dict(l=15, r=15, t=55, b=60),
                       legend=dict(orientation="h", y=-.08, x=.5, xanchor="center", title="Reversal count"))
     return fig
@@ -114,6 +114,7 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
     b.metric("Core-only reversals", f"{int(core.reversals):,}")
     c.metric("Full mean valid changes", f"{full.mean_valid_adjacent_changes:.1f}")
     dcol.metric("Core mean valid changes", f"{core.mean_valid_adjacent_changes:.1f}")
+    st.caption(f"Both circles use the same denominator: **{int(full.pixels):,} participating-field cropland pixels**.")
     st.plotly_chart(_reversal_donut(full, core), width="stretch", config={"displayModeBar": False})
     st.caption("Both circles use the same reversal-count categories. The left circle uses the full assumed season; the right circle uses only pairs wholly inside the blue calendar-core interval, and recalculates the reversal sequence from zero. A shift toward 0–1 on the right means repeated signals were reduced by the boundary exclusion or by fewer observation opportunities.")
 
