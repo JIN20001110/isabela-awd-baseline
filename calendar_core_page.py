@@ -121,13 +121,14 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
 
     st.markdown("### Key takeaway")
     change_reduction = 100 * (1 - core.mean_valid_adjacent_changes / full.mean_valid_adjacent_changes) if full.mean_valid_adjacent_changes else float("nan")
+    window_label = str(full.season_year).replace(f"{system} · ", "", 1)
     st.info(
-        f"For this **{system} · {full.season_year} {season}** window, the share of participating-field cropland "
+        f"For this assumed **{system} · {window_label}** window, the share of participating-field cropland "
         f"with **≥2 reversals** changes from **{full.percent_ge2:.1f}%** in the full assumed season to "
         f"**{core.percent_ge2:.1f}%** after excluding the first and last {boundary} days. "
         f"Mean valid adjacent changes decline from **{full.mean_valid_adjacent_changes:.1f}** to "
         f"**{core.mean_valid_adjacent_changes:.1f}** per pixel ({change_reduction:.0f}% fewer opportunities). "
-        "This is calendar-boundary sensitivity of repeated SAR signals, not evidence of AWD adoption."
+        "The exclusion is a conservative sensitivity check for possible crop-establishment, harvest/transition, and assumed-calendar-edge effects; it does not remove verified crop stages or demonstrate AWD adoption."
     )
     deliver = pd.DataFrame({
         "Metric": ["Pixels with ≥2 reversals", "Mean valid adjacent changes / pixel", "Reversals / valid adjacent change"],
