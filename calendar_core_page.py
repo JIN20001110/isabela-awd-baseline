@@ -128,7 +128,7 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
         f"**{core.percent_ge2:.1f}%** after excluding the first and last {boundary} days. "
         f"Mean valid adjacent changes decline from **{full.mean_valid_adjacent_changes:.1f}** to "
         f"**{core.mean_valid_adjacent_changes:.1f}** per pixel ({change_reduction:.0f}% fewer opportunities). "
-        "The exclusion is a conservative sensitivity check for possible crop-establishment, harvest/transition, and assumed-calendar-edge effects; it does not remove verified crop stages or demonstrate AWD adoption."
+        "The exclusion is a conservative sensitivity check for possible crop-establishment, harvest/transition, and assumed-calendar-edge effects, because field-specific planting and harvest dates are not available."
     )
     deliver = pd.DataFrame({
         "Metric": ["Pixels with ≥2 reversals", "Mean valid adjacent changes / pixel", "Reversals / valid adjacent change"],
