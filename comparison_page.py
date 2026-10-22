@@ -140,28 +140,28 @@ def _donuts(results: list[dict]) -> go.Figure:
     return fig
 
 
-def _comparison_table(results: list[dict]) -> pd.DataFrame:
-    rows = []
+def _tier_comparison(results: list[dict]) -> go.Figure:
+    """Compare increasingly strict reversal-frequency tiers without a wide table."""
+    tiers = [("≥2", "pct_2plus"), ("≥3", "pct_3plus"), ("≥4", "pct_4plus"), ("≥5", "pct_5")]
+    fig = go.Figure()
     for result in results:
-        insufficient = 100 * result["insufficient_pixels"] / result["domain_pixels"]
-        rows.append({
-            "Version": result["method"],
-            "Reference": result["reference"],
-            "Threshold": result["threshold"],
-            "Eligible area (ha)": result["eligible_pixels"] * .01,
-            "Insufficient (% domain)": insufficient,
-            "0 reversals (% eligible)": result["pct_0"],
-            "1 reversal (% eligible)": result["pct_1"],
-            "2 reversals (% eligible)": result["pct_2"],
-            "3 reversals (% eligible)": result["pct_3"],
-            "4 reversals (% eligible)": result["pct_4"],
-            "≥5 reversals (% eligible)": result["pct_5"],
-            "2+ reversals (% eligible)": result["pct_2plus"],
-            "3+ reversals (% eligible)": result["pct_3plus"],
-            "4+ reversals (% eligible)": result["pct_4plus"],
-            "Mean reversals": result["mean_reversals"],
-        })
-    return pd.DataFrame(rows)
+        values = [result[column] for _, column in tiers]
+        fig.add_trace(go.Bar(
+            x=[label for label, _ in tiers], y=values, name=result["method"],
+            marker_color=METHOD_COLORS[result["method"]],
+            text=[f"{value:.2f}%" for value in values], textposition="outside",
+            cliponaxis=False,
+            hovertemplate="%{x} reversals<br>%{y:.3f}% of eligible pixels<extra>%{fullData.name}</extra>",
+        ))
+    fig.update_layout(
+        barmode="group", template="plotly_white", height=365,
+        margin=dict(l=35, r=20, t=25, b=35),
+        yaxis_title="Share of eligible pixels (%)", xaxis_title="At least this many reversals",
+        legend=dict(orientation="h", y=1.18, x=.5, xanchor="center"),
+        font=dict(family="Arial, sans-serif", size=12),
+    )
+    fig.update_yaxes(gridcolor="#E6ECEA", rangemode="tozero")
+    return fig
 
 
 def _across_windows(scope_mode: str, system: str | None, threshold: str,
@@ -237,21 +237,12 @@ def render():
             )
             st.caption(f"Threshold {result['threshold']:.4f} · {result['reference']}")
 
-    table = _comparison_table(results)
-    st.markdown("#### Exact reversal-category shares")
-    st.dataframe(
-        table.style.format({
-            "Threshold": "{:.4f}", "Eligible area (ha)": "{:,.2f}",
-            "Insufficient (% domain)": "{:.3f}", "0 reversals (% eligible)": "{:.2f}",
-            "1 reversal (% eligible)": "{:.2f}", "2 reversals (% eligible)": "{:.2f}",
-            "3 reversals (% eligible)": "{:.2f}", "4 reversals (% eligible)": "{:.2f}", "≥5 reversals (% eligible)": "{:.2f}", "2+ reversals (% eligible)": "{:.2f}", "3+ reversals (% eligible)": "{:.2f}", "4+ reversals (% eligible)": "{:.2f}",
-            "Mean reversals": "{:.3f}",
-        }),
-        hide_index=True, width="stretch",
-    )
+    st.markdown("#### Reversal-frequency tiers")
+    st.plotly_chart(_tier_comparison(results), width="stretch")
+    st.caption("≥2 is the primary screening tier: it requires a repeated, opposite-direction SAR change. ≥3, ≥4 and ≥5 are increasingly strict frequency tiers; they help prioritize patterns for review, not identify AWD adoption.")
 
     st.plotly_chart(_donuts(results), width="stretch")
-    st.caption("Exact shares for every category, including 4 and ≥5 reversals, are shown in the table above. The circles use the same colors: light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Grey appears only where WI observations are insufficient or numerically excluded. Circle percentages use each method's full spatial domain.")
+    st.caption("The circles show the full 0–≥5 reversal distribution. Small segments may not have a legible printed label; hover for their exact percentage and area. Light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Grey appears only where WI observations are insufficient or numerically excluded.")
 
     st.markdown("### Pattern across comparable windows")
     st.plotly_chart(_across_windows(scope_mode, system, threshold, available), width="stretch")
