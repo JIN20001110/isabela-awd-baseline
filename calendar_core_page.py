@@ -32,7 +32,8 @@ def _calendar_figure(row, days):
     blocks = _calendar_window(row, days)
     fig = go.Figure()
     for record in blocks.itertuples():
-        fig.add_trace(go.Bar(x=[(record.end - record.start).days], base=[record.start], y=["Assumed irrigation-system calendar"],
+        duration_ms = (pd.Timestamp(record.end) - pd.Timestamp(record.start)).total_seconds() * 1000
+        fig.add_trace(go.Bar(x=[duration_ms], base=[record.start], y=["Assumed irrigation-system calendar"],
                              orientation="h", marker_color=record.colour, name=record.segment,
                              hovertemplate=f"{record.segment}<br>{record.start} to {record.end}<extra></extra>"))
     fig.update_layout(template="plotly_white", barmode="stack", height=190, margin=dict(l=20, r=20, t=15, b=25),
@@ -106,7 +107,7 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
 
     st.markdown("### Assumed calendar segmentation")
     st.plotly_chart(_calendar_figure(full, boundary), width="stretch", config={"displayModeBar": False})
-    st.caption("Every pair used in the calendar-core result has both observation dates inside the blue interval. Direction memory is reset at the interval boundary; the core result is not obtained by subtracting boundary events.")
+    st.caption("Orange and brown are the excluded calendar boundaries; blue is the retained calendar-core interval. Every pair used in the core result has both observation dates inside blue. Direction memory is reset at the blue boundary, so the core result is recalculated—not obtained by subtracting events.")
 
     st.markdown("### Full season versus calendar core")
     a, b, c, dcol = st.columns(4)
@@ -118,49 +119,22 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
     st.plotly_chart(_reversal_donut(full, core), width="stretch", config={"displayModeBar": False})
     st.caption("Both circles use the same reversal-count categories. The left circle uses the full assumed season; the right circle uses only pairs wholly inside the blue calendar-core interval, and recalculates the reversal sequence from zero. A shift toward 0–1 on the right means repeated signals were reduced by the boundary exclusion or by fewer observation opportunities.")
 
-    st.markdown("### 1. Do high-reversal pixels remain high-reversal pixels after boundary exclusion?")
-    retained = retention[(retention.method == method) & (retention.threshold == threshold) & (retention.system == system)
-                         & (retention.season == season) & (retention.window_id == chosen) & (retention.boundary_days == boundary)].copy()
-    retained["Full-season criterion"] = "≥" + retained.threshold_reversals.astype(str) + " reversals"
-    retained["Not retained"] = retained.full_pixels_ge - retained.retained_pixels_ge
-    persistence = retained.melt(id_vars=["Full-season criterion", "full_pixels_ge", "retained_pixels_ge"],
-                                value_vars=["retained_pixels_ge", "Not retained"], var_name="Core result", value_name="Pixels")
-    persistence["Core result"] = persistence["Core result"].map({"retained_pixels_ge": "Still meets the same threshold in core", "Not retained": "Does not meet it in core"})
-    persistence["Percent of full-season group"] = 100 * persistence.Pixels / persistence.full_pixels_ge
-    fig = px.bar(persistence, x="Percent of full-season group", y="Full-season criterion", color="Core result", orientation="h",
-                 barmode="stack", text="Percent of full-season group",
-                 color_discrete_map={"Still meets the same threshold in core": "#318AB5", "Does not meet it in core": "#E7D8C1"},
-                 custom_data=["Pixels", "full_pixels_ge"])
-    fig.update_traces(texttemplate="%{text:.0f}%", textposition="inside",
-                      hovertemplate="%{y}<br>%{fullData.name}<br>%{customdata[0]:,} of %{customdata[1]:,} full-season pixels (%{x:.1f}%)<extra></extra>")
-    fig.update_layout(template="plotly_white", height=330, legend=dict(orientation="h", y=1.18, x=.5, xanchor="center"),
-                      xaxis_title="Share of pixels that met the criterion in the full season (%)", yaxis_title=None,
-                      margin=dict(l=35,r=15,t=50,b=35))
-    fig.update_xaxes(range=[0, 100], gridcolor="#E7ECEB")
-    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
-    st.caption("Read each row from left to right. Example: among all pixels with **≥2 full-season reversals**, the blue share still has **≥2 reversals** when the first and last calendar days are excluded and the sequence is recalculated from scratch.")
-
-    st.markdown("### 2. Where did full-season reversal events occur? · 12-day boundary definition")
-    event = timing[(timing.method == method) & (timing.threshold == threshold) & (timing.system == system)
-                   & (timing.season == season) & (timing.window_id == chosen) & (timing.boundary_days == 12)
-                   & (timing.segment != "cross_segment_history")].copy()
-    event["Segment"] = event.segment.map({"early boundary": "Early boundary", "calendar-core": "Calendar core", "late boundary": "Late boundary"})
-    total_events = int(event.reversal_events.sum())
-    fig2 = px.bar(event, x="percent_of_full_events", y=["All full-season reversal events"] * len(event), color="segment",
-                  orientation="h", text="percent_of_full_events", color_discrete_map=SEGMENT_COLORS,
-                  custom_data=["reversal_events", "Segment"])
-    fig2.update_traces(texttemplate="%{text:.1f}%", textposition="inside",
-                       hovertemplate="%{customdata[1]}<br>%{customdata[0]:,} of " + f"{total_events:,}" + " events (%{x:.1f}%)<extra></extra>")
-    fig2.update_layout(template="plotly_white", height=250, legend=dict(orientation="h", y=1.2, x=.5, xanchor="center"),
-                       xaxis_title="Share of all full-season reversal events (%)", yaxis_visible=False,
-                       margin=dict(l=15,r=15,t=55,b=35))
-    fig2.update_xaxes(range=[0, 100], gridcolor="#E7ECEB")
-    st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
-    cross = timing[(timing.method == method) & (timing.threshold == threshold) & (timing.system == system)
-                   & (timing.season == season) & (timing.window_id == chosen) & (timing.boundary_days == 12)
-                   & (timing.segment == "cross_segment_history")]
-    cross_count = int(cross.reversal_events.iloc[0]) if len(cross) else 0
-    st.caption(f"This chart has one denominator: all **{total_events:,} full-season reversal events**. The event is assigned to the later significant change that triggered the direction switch. {cross_count:,} event(s) had the preceding significant-change history in a different segment; these are retained, not removed.")
+    st.markdown("### Key takeaway")
+    change_reduction = 100 * (1 - core.mean_valid_adjacent_changes / full.mean_valid_adjacent_changes) if full.mean_valid_adjacent_changes else float("nan")
+    st.info(
+        f"For this **{system} · {full.season_year} {season}** window, the share of participating-field cropland "
+        f"with **≥2 reversals** changes from **{full.percent_ge2:.1f}%** in the full assumed season to "
+        f"**{core.percent_ge2:.1f}%** after excluding the first and last {boundary} days. "
+        f"Mean valid adjacent changes decline from **{full.mean_valid_adjacent_changes:.1f}** to "
+        f"**{core.mean_valid_adjacent_changes:.1f}** per pixel ({change_reduction:.0f}% fewer opportunities). "
+        "This is calendar-boundary sensitivity of repeated SAR signals, not evidence of AWD adoption."
+    )
+    deliver = pd.DataFrame({
+        "Metric": ["Pixels with ≥2 reversals", "Mean valid adjacent changes / pixel", "Reversals / valid adjacent change"],
+        "Full assumed season": [f"{full.percent_ge2:.1f}%", f"{full.mean_valid_adjacent_changes:.1f}", f"{full.reversals_per_valid_change:.3f}"],
+        "Calendar core": [f"{core.percent_ge2:.1f}%", f"{core.mean_valid_adjacent_changes:.1f}", f"{core.reversals_per_valid_change:.3f}"],
+    })
+    st.dataframe(deliver, hide_index=True, width="stretch")
 
     with st.expander("Coverage, exports and interpretation", expanded=False):
         coverage = pd.DataFrame({"Measure": ["Valid adjacent changes", "Significant changes", "Direction-comparison opportunities", "Reversals"],
@@ -170,6 +144,7 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
         st.dataframe(coverage, hide_index=True, width="stretch")
         st.caption("Reversals / valid change and reversals / direction-comparison opportunity are descriptive rates with different denominators; neither is an AWD probability.")
         st.dataframe(chosen_rows.sort_values(["analysis", "boundary_days"]), hide_index=True, width="stretch")
-        st.download_button("Download selected timing rows", event.to_csv(index=False), "reversal_event_timing_summary.csv", "text/csv")
-        st.download_button("Download selected core-retention rows", retained.to_csv(index=False), "calendar_core_retention.csv", "text/csv")
+        selected_retention = retention[(retention.method == method) & (retention.threshold == threshold) & (retention.system == system)
+                                       & (retention.season == season) & (retention.window_id == chosen) & (retention.boundary_days == boundary)]
+        st.download_button("Download selected core-retention rows", selected_retention.to_csv(index=False), "calendar_core_retention.csv", "text/csv")
         st.markdown("Higher counts can also arise from crop structure, rainfall, surface moisture, or SAR scattering. Sentinel-1 sampling can miss actual changes. These results are therefore described as repeated RI/WI signal reversals and calendar-boundary sensitivity—not confirmed water-level changes or AWD adoption.")
