@@ -118,6 +118,11 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
     st.caption(f"Both circles use the same denominator: **{int(full.pixels):,} participating-field cropland pixels**.")
     st.plotly_chart(_reversal_donut(full, core), width="stretch", config={"displayModeBar": False})
     st.caption("Both circles use the same reversal-count categories. The left circle uses the full assumed season; the right circle uses only pairs wholly inside the blue calendar-core interval, and recalculates the reversal sequence from zero. A shift toward 0–1 on the right means repeated signals were reduced by the boundary exclusion or by fewer observation opportunities.")
+    category_columns = {"2": "pixels_2_reversals", "3": "pixels_3_reversals", "4": "pixels_4_reversals", ">=5": "pixels_ge5_reversals"}
+    def detail(row):
+        return " · ".join(f"{label}: {100 * int(row[column]) / int(row.pixels):.2f}%"
+                          for label, column in category_columns.items())
+    st.caption(f"Exact higher-count shares — Full season: {detail(full)} · Calendar core: {detail(core)}")
 
     st.markdown("### Key takeaway")
     change_reduction = 100 * (1 - core.mean_valid_adjacent_changes / full.mean_valid_adjacent_changes) if full.mean_valid_adjacent_changes else float("nan")

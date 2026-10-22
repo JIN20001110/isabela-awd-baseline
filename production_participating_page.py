@@ -66,6 +66,13 @@ def render(reference='production'):
     c4.metric('2+ reversals',f'{summary.percent_2plus_reversals:.1f}%')
 
     selected=distribution.loc[distribution.window_id.eq(chosen)&distribution.threshold.eq(threshold)].copy()
+    shares=selected.set_index('reversal_group').percent_system_cropland_area
+    st.caption('Detailed reversal-count shares')
+    d2,d3,d4,d5=st.columns(4)
+    d2.metric('2 reversals',f'{shares.get("2",0):.2f}%')
+    d3.metric('3 reversals',f'{shares.get("3",0):.2f}%')
+    d4.metric('4 reversals',f'{shares.get("4",0):.2f}%')
+    d5.metric('≥5 reversals',f'{shares.get(">=5",0):.2f}%')
     colors={'0':'#D8C3A5','1':'#DCEEF7','2':'#92C9E2','3':'#4B9CC5','4':'#216B9A','>=5':'#0E3F67'}
     fig=go.Figure(go.Pie(labels=[f'{x} reversals' for x in selected.reversal_group],
         values=selected.percent_system_cropland_area,hole=.58,sort=False,

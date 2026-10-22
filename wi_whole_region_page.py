@@ -134,6 +134,13 @@ def render():
 
     selected = distribution[(distribution.scope == scope) & (distribution.threshold == threshold)
                             & (distribution.window_id == chosen)].copy()
+    shares = selected.set_index("reversal_group").pixels / int(summary.eligible_pixels)
+    st.caption("Detailed reversal-count shares · eligible screening pixels only")
+    d2, d3, d4, d5 = st.columns(4)
+    d2.metric("2 reversals", f"{100 * shares.get('2', 0):.2f}%")
+    d3.metric("3 reversals", f"{100 * shares.get('3', 0):.2f}%")
+    d4.metric("4 reversals", f"{100 * shares.get('4', 0):.2f}%")
+    d5.metric("≥5 reversals", f"{100 * shares.get('>=5', 0):.2f}%")
     left, right = st.columns([1.05, 1])
     with left: st.plotly_chart(donut(selected), width="stretch")
     with right:
