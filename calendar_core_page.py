@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 import release_data as d
@@ -13,6 +14,7 @@ import release_data as d
 
 DATA_DIR = d.DATA / "calendar_core"
 SEGMENT_COLORS = {"early boundary": "#D99438", "calendar-core": "#318AB5", "late boundary": "#B87045"}
+REVERSAL_COLORS = {"0": "#D8C3A5", "1": "#DCEEF7", "2": "#92C9E2", "3": "#4B9CC5", "4": "#216B9A", ">=5": "#0E3F67"}
 
 
 def _calendar_window(row, days):
@@ -45,6 +47,28 @@ def _load():
     if not all(path.exists() for path in required):
         return None
     return tuple(pd.read_parquet(path) for path in required)
+
+
+def _reversal_donut(full, core):
+    categories = ["0", "1", "2", "3", "4", ">=5"]
+    column = {"0": "pixels_0_reversals", "1": "pixels_1_reversals", "2": "pixels_2_reversals",
+              "3": "pixels_3_reversals", "4": "pixels_4_reversals", ">=5": "pixels_ge5_reversals"}
+    fig = make_subplots(rows=1, cols=2, specs=[[{"type": "domain"}, {"type": "domain"}]],
+                        subplot_titles=["Full season · no boundary exclusion", "Calendar core · boundary period excluded"])
+    for position, (label, row) in enumerate((("Full season", full), ("Calendar core", core)), 1):
+        values = [int(row[column[item]]) for item in categories]
+        total = sum(values)
+        fig.add_trace(go.Pie(labels=[f"{item} reversals" if item != ">=5" else "≥5 reversals" for item in categories],
+                             values=values, hole=.60, sort=False, name=label, showlegend=position == 1,
+                             marker=dict(colors=[REVERSAL_COLORS[item] for item in categories], line=dict(color="white", width=1)),
+                             customdata=[[100 * value / total if total else 0, value] for value in values],
+                             textinfo="percent", textposition="inside",
+                             hovertemplate="%{label}<br>%{customdata[0]:.1f}% of participating-field cropland pixels<br>%{customdata[1]:,} pixels<extra></extra>"), row=1, col=position)
+        fig.add_annotation(text=f"<b>{label}</b><br>{total:,} cropland pixels", x=.23 if position == 1 else .77, y=.5,
+                           showarrow=False, font=dict(size=13, color="#263238"))
+    fig.update_layout(template="plotly_white", height=410, margin=dict(l=15, r=15, t=55, b=60),
+                      legend=dict(orientation="h", y=-.08, x=.5, xanchor="center", title="Reversal count"))
+    return fig
 
 
 def render():
@@ -84,17 +108,14 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
     st.plotly_chart(_calendar_figure(full, boundary), width="stretch", config={"displayModeBar": False})
     st.caption("Every pair used in the calendar-core result has both observation dates inside the blue interval. Direction memory is reset at the interval boundary; the core result is not obtained by subtracting boundary events.")
 
-    st.markdown("### Full season versus independently recalculated calendar core")
+    st.markdown("### Full season versus calendar core")
     a, b, c, dcol = st.columns(4)
     a.metric("Full-season reversals", f"{int(full.reversals):,}")
     b.metric("Core-only reversals", f"{int(core.reversals):,}")
     c.metric("Full mean valid changes", f"{full.mean_valid_adjacent_changes:.1f}")
     dcol.metric("Core mean valid changes", f"{core.mean_valid_adjacent_changes:.1f}")
-    coverage = pd.DataFrame({"Measure": ["Valid adjacent changes", "Significant changes", "Direction-comparison opportunities", "Reversals"],
-                             "Full season": [full.valid_adjacent_changes, full.significant_changes, full.direction_comparison_opportunities, full.reversals],
-                             "Calendar core": [core.valid_adjacent_changes, core.significant_changes, core.direction_comparison_opportunities, core.reversals]})
-    st.dataframe(coverage, hide_index=True, width="stretch")
-    st.caption("Reversals / valid change and reversals / direction-comparison opportunity are descriptive rates with different denominators; neither is an AWD probability.")
+    st.plotly_chart(_reversal_donut(full, core), width="stretch", config={"displayModeBar": False})
+    st.caption("Both circles use the same reversal-count categories. The left circle uses the full assumed season; the right circle uses only pairs wholly inside the blue calendar-core interval, and recalculates the reversal sequence from zero. A shift toward 0–1 on the right means repeated signals were reduced by the boundary exclusion or by fewer observation opportunities.")
 
     st.markdown("### 1. Do high-reversal pixels remain high-reversal pixels after boundary exclusion?")
     retained = retention[(retention.method == method) & (retention.threshold == threshold) & (retention.system == system)
@@ -141,6 +162,12 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
     st.caption(f"This chart has one denominator: all **{total_events:,} full-season reversal events**. The event is assigned to the later significant change that triggered the direction switch. {cross_count:,} event(s) had the preceding significant-change history in a different segment; these are retained, not removed.")
 
     with st.expander("Coverage, exports and interpretation", expanded=False):
+        coverage = pd.DataFrame({"Measure": ["Valid adjacent changes", "Significant changes", "Direction-comparison opportunities", "Reversals"],
+                                 "Full season": [full.valid_adjacent_changes, full.significant_changes, full.direction_comparison_opportunities, full.reversals],
+                                 "Calendar core": [core.valid_adjacent_changes, core.significant_changes, core.direction_comparison_opportunities, core.reversals]})
+        st.markdown("**Why direct comparison needs coverage context**")
+        st.dataframe(coverage, hide_index=True, width="stretch")
+        st.caption("Reversals / valid change and reversals / direction-comparison opportunity are descriptive rates with different denominators; neither is an AWD probability.")
         st.dataframe(chosen_rows.sort_values(["analysis", "boundary_days"]), hide_index=True, width="stretch")
         st.download_button("Download selected timing rows", event.to_csv(index=False), "reversal_event_timing_summary.csv", "text/csv")
         st.download_button("Download selected core-retention rows", retained.to_csv(index=False), "calendar_core_retention.csv", "text/csv")
