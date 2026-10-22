@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from plotly.subplots import make_subplots
 
 import release_data as d
 
@@ -109,58 +108,32 @@ def _results(scope_mode: str, system: str | None, threshold: str, window_id: str
     ]
 
 
-def _donuts(results: list[dict]) -> go.Figure:
-    fig = make_subplots(
-        rows=1, cols=3,
-        specs=[[{"type": "domain"}, {"type": "domain"}, {"type": "domain"}]],
-        subplot_titles=[x["method"] for x in results],
-    )
+def _stacked_distribution(results: list[dict]) -> go.Figure:
+    """One 100%-stacked bar per method gives the complete category distribution."""
     order = ["Insufficient", "0", "1", "2", "3", "4", ">=5"]
-    for col, result in enumerate(results, 1):
-        used = order
-        values = [result["pixels"][x] for x in used]
-        labels = ["Insufficient" if x == "Insufficient" else f"{x} reversals" for x in used]
-        hover = [
-            f"{label}<br>{100 * value / result['domain_pixels']:.3f}% of full domain"
-            f"<br>{value * .01:,.1f} ha"
-            for label, value in zip(labels, values)
-        ]
-        fig.add_trace(go.Pie(
-            labels=labels, values=values, hole=.58, sort=False,
-            marker=dict(colors=[CATEGORY_COLORS[x] for x in used], line=dict(color="white", width=1)),
-            textinfo="percent", textposition="inside", hovertext=hover,
-            hovertemplate="%{hovertext}<extra></extra>",
-            name=result["method"], legendgroup="categories", showlegend=col == 1,
-        ), row=1, col=col)
-    fig.update_layout(
-        template="plotly_white", height=575, margin=dict(l=20, r=20, t=65, b=145),
-        legend=dict(title="Reversal category", orientation="h", y=-.15, x=.5, xanchor="center"),
-        font=dict(family="Arial, sans-serif", size=12),
-    )
-    return fig
-
-
-def _tier_comparison(results: list[dict]) -> go.Figure:
-    """Compare increasingly strict reversal-frequency tiers without a wide table."""
-    tiers = [("≥2", "pct_2plus"), ("≥3", "pct_3plus"), ("≥4", "pct_4plus"), ("≥5", "pct_5")]
     fig = go.Figure()
-    for result in results:
-        values = [result[column] for _, column in tiers]
+    for category in order:
+        label = "Insufficient" if category == "Insufficient" else f"{category} reversals"
+        values = [100 * result["pixels"][category] / result["domain_pixels"] for result in results]
+        areas = [result["pixels"][category] * .01 for result in results]
         fig.add_trace(go.Bar(
-            x=[label for label, _ in tiers], y=values, name=result["method"],
-            marker_color=METHOD_COLORS[result["method"]],
-            text=[f"{value:.2f}%" for value in values], textposition="outside",
-            cliponaxis=False,
-            hovertemplate="%{x} reversals<br>%{y:.3f}% of eligible pixels<extra>%{fullData.name}</extra>",
+            y=[result["method"] for result in results], x=values, orientation="h", name=label,
+            marker=dict(color=CATEGORY_COLORS[category], line=dict(color="white", width=1)),
+            customdata=areas,
+            text=[f"{value:.1f}%" if value >= 2 else "" for value in values],
+            textposition="inside",
+            hovertemplate=f"{label}<br>%{{x:.3f}}% of full domain"
+                          "<br>%{customdata:,.1f} ha<extra></extra>",
         ))
     fig.update_layout(
-        barmode="group", template="plotly_white", height=365,
-        margin=dict(l=35, r=20, t=25, b=35),
-        yaxis_title="Share of eligible pixels (%)", xaxis_title="At least this many reversals",
-        legend=dict(orientation="h", y=1.18, x=.5, xanchor="center"),
+        barmode="stack", template="plotly_white", height=365,
+        margin=dict(l=35, r=20, t=75, b=35),
+        legend=dict(title="Reversal category", orientation="h", y=1.23, x=.5, xanchor="center"),
         font=dict(family="Arial, sans-serif", size=12),
     )
-    fig.update_yaxes(gridcolor="#E6ECEA", rangemode="tozero")
+    fig.update_xaxes(range=[0, 100], ticksuffix="%", title="Share of full spatial domain")
+    fig.update_yaxes(title=None, categoryorder="array",
+                     categoryarray=[result["method"] for result in results])
     return fig
 
 
@@ -232,17 +205,14 @@ def render():
             display = "N/A" if pd.isna(result["pct_2plus"]) else f"{result['pct_2plus']:.2f}%"
             st.metric("≥2 reversals", display)
             st.caption(
-                f"≥3: {result['pct_3plus']:.2f}% · "
-                f"≥4: {result['pct_4plus']:.2f}% · ≥5: {result['pct_5']:.2f}%"
+                f"Exact high-count bands — 3: {result['pct_3']:.2f}% · "
+                f"4: {result['pct_4']:.2f}% · ≥5: {result['pct_5']:.2f}%"
             )
             st.caption(f"Threshold {result['threshold']:.4f} · {result['reference']}")
 
-    st.markdown("#### Reversal-frequency tiers")
-    st.plotly_chart(_tier_comparison(results), width="stretch")
-    st.caption("≥2 is the primary screening tier: it requires a repeated, opposite-direction SAR change. ≥3, ≥4 and ≥5 are increasingly strict frequency tiers; they help prioritize patterns for review, not identify AWD adoption.")
-
-    st.plotly_chart(_donuts(results), width="stretch")
-    st.caption("The circles show the full 0–≥5 reversal distribution. Small segments may not have a legible printed label; hover for their exact percentage and area. Light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Grey appears only where WI observations are insufficient or numerically excluded.")
+    st.markdown("#### Full reversal-count distribution")
+    st.plotly_chart(_stacked_distribution(results), width="stretch")
+    st.caption("Each bar is 100% of its method's full spatial domain. Light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Percentages are printed where there is space; hover any segment for its exact percentage and area. ≥2 remains the primary screening tier, while higher counts indicate more frequent repeated SAR reversals.")
 
     st.markdown("### Pattern across comparable windows")
     st.plotly_chart(_across_windows(scope_mode, system, threshold, available), width="stretch")
