@@ -96,28 +96,49 @@ The comparison is about **persistence of repeated SAR signal reversals after a c
     st.dataframe(coverage, hide_index=True, width="stretch")
     st.caption("Reversals / valid change and reversals / direction-comparison opportunity are descriptive rates with different denominators; neither is an AWD probability.")
 
-    st.markdown("### Do repeated reversals persist inside the calendar core?")
+    st.markdown("### 1. Do high-reversal pixels remain high-reversal pixels after boundary exclusion?")
     retained = retention[(retention.method == method) & (retention.threshold == threshold) & (retention.system == system)
                          & (retention.season == season) & (retention.window_id == chosen) & (retention.boundary_days == boundary)].copy()
-    retained["Category"] = "Full-season ≥" + retained.threshold_reversals.astype(str)
-    fig = px.bar(retained, x="Category", y="retained_percent_of_full_ge", text="retained_percent_of_full_ge",
-                 color="Category", color_discrete_sequence=["#B8DDEC", "#7AB8D4", "#318AB5", "#155A8A"])
-    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-    fig.update_layout(template="plotly_white", height=360, showlegend=False, yaxis_title="Retained in core (% of full-season category)", xaxis_title=None, margin=dict(l=35,r=15,t=20,b=25))
-    fig.update_yaxes(range=[0, 105], gridcolor="#E7ECEB")
+    retained["Full-season criterion"] = "≥" + retained.threshold_reversals.astype(str) + " reversals"
+    retained["Not retained"] = retained.full_pixels_ge - retained.retained_pixels_ge
+    persistence = retained.melt(id_vars=["Full-season criterion", "full_pixels_ge", "retained_pixels_ge"],
+                                value_vars=["retained_pixels_ge", "Not retained"], var_name="Core result", value_name="Pixels")
+    persistence["Core result"] = persistence["Core result"].map({"retained_pixels_ge": "Still meets the same threshold in core", "Not retained": "Does not meet it in core"})
+    persistence["Percent of full-season group"] = 100 * persistence.Pixels / persistence.full_pixels_ge
+    fig = px.bar(persistence, x="Percent of full-season group", y="Full-season criterion", color="Core result", orientation="h",
+                 barmode="stack", text="Percent of full-season group",
+                 color_discrete_map={"Still meets the same threshold in core": "#318AB5", "Does not meet it in core": "#E7D8C1"},
+                 custom_data=["Pixels", "full_pixels_ge"])
+    fig.update_traces(texttemplate="%{text:.0f}%", textposition="inside",
+                      hovertemplate="%{y}<br>%{fullData.name}<br>%{customdata[0]:,} of %{customdata[1]:,} full-season pixels (%{x:.1f}%)<extra></extra>")
+    fig.update_layout(template="plotly_white", height=330, legend=dict(orientation="h", y=1.18, x=.5, xanchor="center"),
+                      xaxis_title="Share of pixels that met the criterion in the full season (%)", yaxis_title=None,
+                      margin=dict(l=35,r=15,t=50,b=35))
+    fig.update_xaxes(range=[0, 100], gridcolor="#E7ECEB")
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+    st.caption("Read each row from left to right. Example: among all pixels with **≥2 full-season reversals**, the blue share still has **≥2 reversals** when the first and last calendar days are excluded and the sequence is recalculated from scratch.")
 
-    st.markdown("### Timing of full-season reversal events")
+    st.markdown("### 2. Where did full-season reversal events occur? · 12-day boundary definition")
     event = timing[(timing.method == method) & (timing.threshold == threshold) & (timing.system == system)
                    & (timing.season == season) & (timing.window_id == chosen) & (timing.boundary_days == 12)
                    & (timing.segment != "cross_segment_history")].copy()
-    event["segment_label"] = event.segment.str.replace("boundary", "boundary").str.title()
-    fig2 = px.bar(event, x="segment_label", y="reversal_events", color="segment",
-                  color_discrete_map=SEGMENT_COLORS, text="percent_of_full_events")
-    fig2.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-    fig2.update_layout(template="plotly_white", height=350, showlegend=False, xaxis_title=None, yaxis_title="Full-season reversal events", margin=dict(l=35,r=15,t=20,b=25))
+    event["Segment"] = event.segment.map({"early boundary": "Early boundary", "calendar-core": "Calendar core", "late boundary": "Late boundary"})
+    total_events = int(event.reversal_events.sum())
+    fig2 = px.bar(event, x="percent_of_full_events", y=["All full-season reversal events"] * len(event), color="segment",
+                  orientation="h", text="percent_of_full_events", color_discrete_map=SEGMENT_COLORS,
+                  custom_data=["reversal_events", "Segment"])
+    fig2.update_traces(texttemplate="%{text:.1f}%", textposition="inside",
+                       hovertemplate="%{customdata[1]}<br>%{customdata[0]:,} of " + f"{total_events:,}" + " events (%{x:.1f}%)<extra></extra>")
+    fig2.update_layout(template="plotly_white", height=250, legend=dict(orientation="h", y=1.2, x=.5, xanchor="center"),
+                       xaxis_title="Share of all full-season reversal events (%)", yaxis_visible=False,
+                       margin=dict(l=15,r=15,t=55,b=35))
+    fig2.update_xaxes(range=[0, 100], gridcolor="#E7ECEB")
     st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
-    st.caption("The timing panel assigns an event to the later significant change that triggered its direction switch. Events with history from another segment are retained and reported separately in the exported timing table.")
+    cross = timing[(timing.method == method) & (timing.threshold == threshold) & (timing.system == system)
+                   & (timing.season == season) & (timing.window_id == chosen) & (timing.boundary_days == 12)
+                   & (timing.segment == "cross_segment_history")]
+    cross_count = int(cross.reversal_events.iloc[0]) if len(cross) else 0
+    st.caption(f"This chart has one denominator: all **{total_events:,} full-season reversal events**. The event is assigned to the later significant change that triggered the direction switch. {cross_count:,} event(s) had the preceding significant-change history in a different segment; these are retained, not removed.")
 
     with st.expander("Coverage, exports and interpretation", expanded=False):
         st.dataframe(chosen_rows.sort_values(["analysis", "boundary_days"]), hide_index=True, width="stretch")
