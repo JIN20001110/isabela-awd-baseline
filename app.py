@@ -32,7 +32,7 @@ PAGES = [
     "WI · All area · Rice ref",
     "WI · Fields · Rice ref",
     "Comparison",
-    "Reversal timing & calendar core",
+    "Appendix: Reversal timing & calendar core",
 ]
 
 st.sidebar.title("🌾 SAR Baseline")
