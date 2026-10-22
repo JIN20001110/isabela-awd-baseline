@@ -66,7 +66,7 @@ def render(reference='production'):
     c4.metric('2+ reversals',f'{summary.percent_2plus_reversals:.1f}%')
 
     selected=distribution.loc[distribution.window_id.eq(chosen)&distribution.threshold.eq(threshold)].copy()
-    colors={'0':'#D8C3A5','1':'#DCEEF7','2':'#72B7D6','3+':'#155A8A'}
+    colors={'0':'#D8C3A5','1':'#DCEEF7','2':'#92C9E2','3':'#4B9CC5','4':'#216B9A','>=5':'#0E3F67'}
     fig=go.Figure(go.Pie(labels=[f'{x} reversals' for x in selected.reversal_group],
         values=selected.percent_system_cropland_area,hole=.58,sort=False,
         marker=dict(colors=[colors[x] for x in selected.reversal_group]),
@@ -79,7 +79,7 @@ def render(reference='production'):
 
     st.markdown('### Map')
     st.iframe(map_view(records[(threshold,chosen)],static_section).get_root().render(),height=760)
-    st.caption('Light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ reversals. Only Cropland inside supplied fields is shown.')
+    st.caption('Light brown = 0 · blues = 1, 2, 3, 4 and ≥5 reversals (darker = more). Only Cropland inside supplied fields is shown.')
 
     st.markdown('### Compare complete windows')
     compare=distribution.loc[distribution.system.eq(system)&distribution.season.eq(season)&distribution.threshold.eq(threshold)].copy()
@@ -104,7 +104,7 @@ def render(reference='production'):
         ranked=selected_fields.loc[selected_fields.cropland_pixels.ge(minimum)].sort_values(
             ['percent_pixels_2plus_reversals','mean_reversals','cropland_pixels'],ascending=False)
         show=ranked[['field_uid','field_id','field_area_ha','cropland_pixels','percent_pixels_0_reversals',
-            'percent_pixels_1_reversal','percent_pixels_2_reversals','percent_pixels_3plus_reversals',
+            'percent_pixels_1_reversal','percent_pixels_2_reversals',
             'percent_pixels_2plus_reversals','mean_reversals','material_overlap_flag']]
         st.dataframe(show.head(500).style.format({c:'{:.1f}' for c in show.columns if c.startswith('percent_')}),hide_index=True,width='stretch')
         st.caption('Ranked by the field share with 2+ reversals. Review priority only—not confirmed AWD.')

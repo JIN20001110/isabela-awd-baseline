@@ -54,7 +54,7 @@ def render(reference='production'):
     c1.metric('Valid 12-day pairs',f'{int(summary.pairs)}');c2.metric('0 reversals',f'{summary.percent_0_reversals:.1f}%')
     c3.metric('1 reversal',f'{summary.percent_1_reversal:.1f}%');c4.metric('2+ reversals',f'{summary.percent_2plus_reversals:.1f}%')
     selected=distribution.loc[distribution.window_id.eq(chosen)&distribution.threshold.eq(threshold)].copy()
-    colors={'0':'#D8C3A5','1':'#DCEEF7','2':'#72B7D6','3+':'#155A8A'}
+    colors={'0':'#D8C3A5','1':'#DCEEF7','2':'#92C9E2','3':'#4B9CC5','4':'#216B9A','>=5':'#0E3F67'}
     fig=go.Figure(go.Pie(labels=[f'{x} reversals' for x in selected.reversal_group],
         values=selected.percent_regional_cropland_area,hole=.58,sort=False,
         marker=dict(colors=[colors[x] for x in selected.reversal_group]),
@@ -66,7 +66,7 @@ def render(reference='production'):
     st.plotly_chart(fig,width='stretch')
     st.markdown('### Map')
     st.iframe(map_view(records[(threshold,chosen)],static_section).get_root().render(),height=760)
-    st.caption('Light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ reversals. Thin outlines show supplied system-field coverage only.')
+    st.caption('Light brown = 0 · blues = 1, 2, 3, 4 and ≥5 reversals (darker = more). Thin outlines show supplied system-field coverage only.')
     st.markdown('### Compare complete windows')
     compare=distribution.loc[distribution.season.eq(season)&distribution.threshold.eq(threshold)].copy()
     labels=compare[['window_id','label']].drop_duplicates().label.tolist()

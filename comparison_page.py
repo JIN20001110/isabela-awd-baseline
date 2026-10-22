@@ -14,8 +14,10 @@ CATEGORY_COLORS = {
     "Insufficient": "#9CA3A5",
     "0": "#D8C3A5",
     "1": "#DCEEF7",
-    "2": "#72B7D6",
-    "3+": "#155A8A",
+    "2": "#92C9E2",
+    "3": "#4B9CC5",
+    "4": "#216B9A",
+    ">=5": "#0E3F67",
 }
 METHOD_COLORS = {
     "Production RI": "#277DA1",
@@ -45,12 +47,14 @@ def _linear_result(branch: str, scope_mode: str, threshold: str, window_id: str)
         "domain_pixels": domain_pixels,
         "eligible_pixels": domain_pixels,
         "insufficient_pixels": 0,
-        "pixels": {"Insufficient": 0, **{x: pixels.get(x, 0) for x in ["0", "1", "2", "3+"]}},
-        "pct_0": float(row.percent_0_reversals),
-        "pct_1": float(row.percent_1_reversal),
-        "pct_2": float(row.percent_2_reversals),
-        "pct_3plus": float(row.percent_3plus_reversals),
-        "pct_2plus": float(row.percent_2plus_reversals),
+        "pixels": {"Insufficient": 0, **{x: pixels.get(x, 0) for x in ["0", "1", "2", "3", "4", ">=5"]}},
+        "pct_0": 100 * pixels.get("0", 0) / domain_pixels,
+        "pct_1": 100 * pixels.get("1", 0) / domain_pixels,
+        "pct_2": 100 * pixels.get("2", 0) / domain_pixels,
+        "pct_3": 100 * pixels.get("3", 0) / domain_pixels,
+        "pct_4": 100 * pixels.get("4", 0) / domain_pixels,
+        "pct_5": 100 * pixels.get(">=5", 0) / domain_pixels,
+        "pct_2plus": 100 * sum(pixels.get(x, 0) for x in ["2", "3", "4", ">=5"]) / domain_pixels,
         "mean_reversals": float(row.mean_reversals),
         "mean_significant": float(row.mean_significant_transitions),
         "pairs": int(row.pairs),
@@ -80,12 +84,12 @@ def _wi_result(scope: str, threshold: str, window_id: str) -> dict:
         "domain_pixels": int(row.domain_pixels),
         "eligible_pixels": eligible,
         "insufficient_pixels": int(row.insufficient_pixels),
-        "pixels": {x: pixels.get(x, 0) for x in ["Insufficient", "0", "1", "2", "3+"]},
+        "pixels": {x: pixels.get(x, 0) for x in ["Insufficient", "0", "1", "2", "3", "4", ">=5"]},
         "pct_0": eligible_percent("0"),
         "pct_1": eligible_percent("1"),
         "pct_2": eligible_percent("2"),
-        "pct_3plus": eligible_percent("3+"),
-        "pct_2plus": eligible_percent("2") + eligible_percent("3+") if eligible else np.nan,
+        "pct_3": eligible_percent("3"), "pct_4": eligible_percent("4"), "pct_5": eligible_percent(">=5"),
+        "pct_2plus": sum(eligible_percent(x) for x in ["2", "3", "4", ">=5"]) if eligible else np.nan,
         "mean_reversals": float(row.reversals) / eligible if eligible else np.nan,
         "mean_significant": float(row.significant_changes) / eligible if eligible else np.nan,
         "pairs": int(row.pairs),
@@ -107,7 +111,7 @@ def _donuts(results: list[dict]) -> go.Figure:
         specs=[[{"type": "domain"}, {"type": "domain"}, {"type": "domain"}]],
         subplot_titles=[x["method"] for x in results],
     )
-    order = ["Insufficient", "0", "1", "2", "3+"]
+    order = ["Insufficient", "0", "1", "2", "3", "4", ">=5"]
     for col, result in enumerate(results, 1):
         used = order
         values = [result["pixels"][x] for x in used]
@@ -142,7 +146,9 @@ def _comparison_table(results: list[dict]) -> pd.DataFrame:
             "0 reversals (% eligible)": result["pct_0"],
             "1 reversal (% eligible)": result["pct_1"],
             "2 reversals (% eligible)": result["pct_2"],
-            "3+ reversals (% eligible)": result["pct_3plus"],
+            "3 reversals (% eligible)": result["pct_3"],
+            "4 reversals (% eligible)": result["pct_4"],
+            "≥5 reversals (% eligible)": result["pct_5"],
             "2+ reversals (% eligible)": result["pct_2plus"],
             "Mean reversals": result["mean_reversals"],
         })
@@ -219,7 +225,7 @@ def render():
             st.caption(f"Threshold {result['threshold']:.4f} · {result['reference']}")
 
     st.plotly_chart(_donuts(results), width="stretch")
-    st.caption("Each circle uses the same reversal colors: light brown = 0, very light blue = 1, light blue = 2, dark blue = 3+. Grey appears only where WI observations are insufficient or numerically excluded. Circle percentages use each method's full spatial domain.")
+    st.caption("Each circle uses the same reversal colors: light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Grey appears only where WI observations are insufficient or numerically excluded. Circle percentages use each method's full spatial domain.")
 
     table = _comparison_table(results)
     st.dataframe(
@@ -227,7 +233,7 @@ def render():
             "Threshold": "{:.4f}", "Eligible area (ha)": "{:,.2f}",
             "Insufficient (% domain)": "{:.3f}", "0 reversals (% eligible)": "{:.2f}",
             "1 reversal (% eligible)": "{:.2f}", "2 reversals (% eligible)": "{:.2f}",
-            "3+ reversals (% eligible)": "{:.2f}", "2+ reversals (% eligible)": "{:.2f}",
+            "3 reversals (% eligible)": "{:.2f}", "4 reversals (% eligible)": "{:.2f}", "≥5 reversals (% eligible)": "{:.2f}", "2+ reversals (% eligible)": "{:.2f}",
             "Mean reversals": "{:.3f}",
         }),
         hide_index=True, width="stretch",

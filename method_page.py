@@ -64,7 +64,7 @@ FLOW = '''<div class="method-flowchart">
   <div class="flow-arrow">→</div>
   <div class="method-step"><b>8 · Reversals</b><span>Significant changes that switch direction</span></div>
   <div class="flow-arrow">→</div>
-  <div class="method-step output"><b>9 · Spatial statistics</b><span>0 · 1 · 2 · 3+ reversals<br>Maps and field review</span></div>
+  <div class="method-step output"><b>9 · Spatial statistics</b><span>0 · 1 · 2 · 3 · 4 · ≥5 reversals<br>Maps and field review</span></div>
   <div class="flow-arrow">→</div>
   <div class="method-step output"><b>10 · Interpretation</b><span>Potential AWD-like SAR patterns<br>Not confirmed AWD</span></div>
 </div>
@@ -118,7 +118,7 @@ def render():
 <div class="stat-arrow">→</div>
 <div class="stat-box"><b>Direction reversal</b><span>The next significant change moves in the opposite direction within the same uninterrupted cropping window.</span></div>
 <div class="stat-arrow">→</div>
-<div class="stat-box"><b>Spatial statistic</b><span>Share of eligible pixels with 0, 1, 2 or 3+ reversals.</span></div>
+<div class="stat-box"><b>Spatial statistic</b><span>Share of eligible pixels with 0, 1, 2, 3, 4 or ≥5 reversals.</span></div>
 </div>''', unsafe_allow_html=True)
 
     left, right = st.columns(2)

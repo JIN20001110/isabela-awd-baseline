@@ -12,7 +12,7 @@ import streamlit as st
 import release_data as d
 
 COLORS = {"Insufficient": "#979d9f", "0": "#D8C3A5", "1": "#DCEEF7",
-          "2": "#72B7D6", "3+": "#155A8A"}
+          "2": "#92C9E2", "3": "#4B9CC5", "4": "#216B9A", ">=5": "#0E3F67"}
 
 
 def uri(path):
@@ -65,7 +65,7 @@ def map_view(static, manifest, record, scope, show_rice, show_production):
 
 
 def donut(selected):
-    selected = selected.set_index("reversal_group").reindex(["Insufficient", "0", "1", "2", "3+"]).reset_index()
+    selected = selected.set_index("reversal_group").reindex(["Insufficient", "0", "1", "2", "3", "4", ">=5"]).fillna(0).reset_index()
     fig = go.Figure(go.Pie(
         labels=["Insufficient" if x == "Insufficient" else f"{x} reversals" for x in selected.reversal_group],
         values=selected.pixels, hole=.58, sort=False,
@@ -160,7 +160,7 @@ def render():
     record = records[(scope, threshold, chosen)]
     st.iframe(map_view(static, manifest, record, scope, show_rice, show_production).get_root().render(),
               height=760)
-    st.caption("Grey = insufficient · light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ WI reversals. The yellow overlay is historical potential rice, not confirmed rice cultivation in 2023–2025.")
+    st.caption("Grey = insufficient · light brown = 0 · blues = 1, 2, 3, 4 and ≥5 WI reversals (darker = more). The yellow overlay is historical potential rice, not confirmed rice cultivation in 2023–2025.")
 
     st.markdown("### Comparison with the production baseline")
     old = existing_summary(scope, threshold, chosen)

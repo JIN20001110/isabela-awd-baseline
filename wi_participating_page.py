@@ -11,12 +11,12 @@ import release_data as d
 
 
 COLORS = {"Insufficient": "#979d9f", "0": "#D8C3A5", "1": "#DCEEF7",
-          "2": "#72B7D6", "3+": "#155A8A"}
+          "2": "#92C9E2", "3": "#4B9CC5", "4": "#216B9A", ">=5": "#0E3F67"}
 
 
 def aggregate_donut(selected):
     selected = selected.set_index("reversal_group").reindex(
-        ["Insufficient", "0", "1", "2", "3+"]
+        ["Insufficient", "0", "1", "2", "3", "4", ">=5"]
     ).fillna(0).reset_index()
     fig = go.Figure(go.Pie(
         labels=["Insufficient" if x == "Insufficient" else f"{x} reversals"
@@ -167,10 +167,10 @@ def render():
     c1.metric("Eligible screening area", f"{aggregate.eligible_area_ha:,.1f} ha")
     c2.metric("0 reversals", f"{100 * int(aggregate_distribution.loc[aggregate_distribution.reversal_group.eq('0'), 'pixels'].sum()) / int(aggregate.eligible_pixels):.1f}%" if aggregate.eligible_pixels else "N/A")
     c3.metric("1 reversal", f"{100 * int(aggregate_distribution.loc[aggregate_distribution.reversal_group.eq('1'), 'pixels'].sum()) / int(aggregate.eligible_pixels):.1f}%" if aggregate.eligible_pixels else "N/A")
-    two_plus = int(aggregate_distribution.loc[aggregate_distribution.reversal_group.isin(['2', '3+']), 'pixels'].sum())
+    two_plus = int(aggregate_distribution.loc[aggregate_distribution.reversal_group.isin(['2', '3', '4', '>=5']), 'pixels'].sum())
     c4.metric("2+ reversals", f"{100 * two_plus / int(aggregate.eligible_pixels):.1f}%" if aggregate.eligible_pixels else "N/A")
     st.plotly_chart(aggregate_donut(aggregate_distribution), width="stretch")
-    st.caption("Aggregate distribution for eligible Cropland inside the selected irrigation-system fields. Grey = insufficient · light brown = 0 · very light blue = 1 · light blue = 2 · dark blue = 3+ reversals.")
+    st.caption("Aggregate distribution for eligible Cropland inside the selected irrigation-system fields. Grey = insufficient · light brown = 0 · blues = 1, 2, 3, 4 and ≥5 reversals (darker = more).")
 
     field_ids = sorted(selected_options.field_uid.unique().tolist())
     if st.session_state.get("wi35_field_uid") not in field_ids:
