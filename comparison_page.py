@@ -55,6 +55,8 @@ def _linear_result(branch: str, scope_mode: str, threshold: str, window_id: str)
         "pct_4": 100 * pixels.get("4", 0) / domain_pixels,
         "pct_5": 100 * pixels.get(">=5", 0) / domain_pixels,
         "pct_2plus": 100 * sum(pixels.get(x, 0) for x in ["2", "3", "4", ">=5"]) / domain_pixels,
+        "pct_3plus": 100 * sum(pixels.get(x, 0) for x in ["3", "4", ">=5"]) / domain_pixels,
+        "pct_4plus": 100 * sum(pixels.get(x, 0) for x in ["4", ">=5"]) / domain_pixels,
         "mean_reversals": float(row.mean_reversals),
         "mean_significant": float(row.mean_significant_transitions),
         "pairs": int(row.pairs),
@@ -90,6 +92,8 @@ def _wi_result(scope: str, threshold: str, window_id: str) -> dict:
         "pct_2": eligible_percent("2"),
         "pct_3": eligible_percent("3"), "pct_4": eligible_percent("4"), "pct_5": eligible_percent(">=5"),
         "pct_2plus": sum(eligible_percent(x) for x in ["2", "3", "4", ">=5"]) if eligible else np.nan,
+        "pct_3plus": sum(eligible_percent(x) for x in ["3", "4", ">=5"]) if eligible else np.nan,
+        "pct_4plus": sum(eligible_percent(x) for x in ["4", ">=5"]) if eligible else np.nan,
         "mean_reversals": float(row.reversals) / eligible if eligible else np.nan,
         "mean_significant": float(row.significant_changes) / eligible if eligible else np.nan,
         "pairs": int(row.pairs),
@@ -116,18 +120,21 @@ def _donuts(results: list[dict]) -> go.Figure:
         used = order
         values = [result["pixels"][x] for x in used]
         labels = ["Insufficient" if x == "Insufficient" else f"{x} reversals" for x in used]
-        custom = [[100 * value / result["domain_pixels"], value * .01] for value in values]
+        hover = [
+            f"{label}<br>{100 * value / result['domain_pixels']:.3f}% of full domain"
+            f"<br>{value * .01:,.1f} ha"
+            for label, value in zip(labels, values)
+        ]
         fig.add_trace(go.Pie(
             labels=labels, values=values, hole=.58, sort=False,
             marker=dict(colors=[CATEGORY_COLORS[x] for x in used], line=dict(color="white", width=1)),
-            customdata=custom, textinfo="percent", textposition="inside",
-            hovertemplate="%{label}<br>%{customdata[0]:.2f}% of full domain"
-                          "<br>%{customdata[1]:,.1f} ha<extra></extra>",
+            textinfo="percent", textposition="inside", hovertext=hover,
+            hovertemplate="%{hovertext}<extra></extra>",
             name=result["method"], legendgroup="categories", showlegend=col == 1,
         ), row=1, col=col)
     fig.update_layout(
-        template="plotly_white", height=430, margin=dict(l=20, r=20, t=65, b=70),
-        legend=dict(title="Reversal category", orientation="h", y=-.08, x=.5, xanchor="center"),
+        template="plotly_white", height=575, margin=dict(l=20, r=20, t=65, b=145),
+        legend=dict(title="Reversal category", orientation="h", y=-.15, x=.5, xanchor="center"),
         font=dict(family="Arial, sans-serif", size=12),
     )
     return fig
@@ -150,6 +157,8 @@ def _comparison_table(results: list[dict]) -> pd.DataFrame:
             "4 reversals (% eligible)": result["pct_4"],
             "≥5 reversals (% eligible)": result["pct_5"],
             "2+ reversals (% eligible)": result["pct_2plus"],
+            "3+ reversals (% eligible)": result["pct_3plus"],
+            "4+ reversals (% eligible)": result["pct_4plus"],
             "Mean reversals": result["mean_reversals"],
         })
     return pd.DataFrame(rows)
@@ -221,23 +230,28 @@ def render():
         with column:
             st.markdown(f"**{result['method']}**")
             display = "N/A" if pd.isna(result["pct_2plus"]) else f"{result['pct_2plus']:.2f}%"
-            st.metric("2+ reversals", display)
+            st.metric("≥2 reversals", display)
+            st.caption(
+                f"≥3: {result['pct_3plus']:.2f}% · "
+                f"≥4: {result['pct_4plus']:.2f}% · ≥5: {result['pct_5']:.2f}%"
+            )
             st.caption(f"Threshold {result['threshold']:.4f} · {result['reference']}")
 
-    st.plotly_chart(_donuts(results), width="stretch")
-    st.caption("Each circle uses the same reversal colors: light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Grey appears only where WI observations are insufficient or numerically excluded. Circle percentages use each method's full spatial domain.")
-
     table = _comparison_table(results)
+    st.markdown("#### Exact reversal-category shares")
     st.dataframe(
         table.style.format({
             "Threshold": "{:.4f}", "Eligible area (ha)": "{:,.2f}",
             "Insufficient (% domain)": "{:.3f}", "0 reversals (% eligible)": "{:.2f}",
             "1 reversal (% eligible)": "{:.2f}", "2 reversals (% eligible)": "{:.2f}",
-            "3 reversals (% eligible)": "{:.2f}", "4 reversals (% eligible)": "{:.2f}", "≥5 reversals (% eligible)": "{:.2f}", "2+ reversals (% eligible)": "{:.2f}",
+            "3 reversals (% eligible)": "{:.2f}", "4 reversals (% eligible)": "{:.2f}", "≥5 reversals (% eligible)": "{:.2f}", "2+ reversals (% eligible)": "{:.2f}", "3+ reversals (% eligible)": "{:.2f}", "4+ reversals (% eligible)": "{:.2f}",
             "Mean reversals": "{:.3f}",
         }),
         hide_index=True, width="stretch",
     )
+
+    st.plotly_chart(_donuts(results), width="stretch")
+    st.caption("Exact shares for every category, including 4 and ≥5 reversals, are shown in the table above. The circles use the same colors: light brown = 0; progressively darker blues = 1, 2, 3, 4 and ≥5 reversals. Grey appears only where WI observations are insufficient or numerically excluded. Circle percentages use each method's full spatial domain.")
 
     st.markdown("### Pattern across comparable windows")
     st.plotly_chart(_across_windows(scope_mode, system, threshold, available), width="stretch")
